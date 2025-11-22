@@ -1,9 +1,12 @@
+import '../data/repositories/login_repository.dart';
+
 class LoginManager {
+  final repo = LoginRepository();
+
   Future<Map<String, dynamic>> login({
     required String email,
     required String password,
   }) async {
-    // Simulasi validasi
     if (email.isEmpty || password.isEmpty) {
       return {
         "success": false,
@@ -11,17 +14,13 @@ class LoginManager {
       };
     }
 
-    // Simulasi cek user (bisa diganti API)
-    if (email == "admin@gmail.com" && password == "admin123") {
-      return {
-        "success": true,
-        "message": "Login berhasil"
-      };
-    }
+    final result = await repo.login(email, password);
 
     return {
-      "success": false,
-      "message": "Email atau password salah"
+      "success": result.success,
+      "message": result.message,
+      "token": result.token,
+      "user_id": result.userId,
     };
   }
 }
