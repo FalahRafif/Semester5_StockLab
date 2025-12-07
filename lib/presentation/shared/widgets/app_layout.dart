@@ -36,7 +36,8 @@ class _AppLayoutState extends State<AppLayout> {
 
   Future<void> _initAuth() async {
     final token = await TokenService.getToken();
-
+    print("=========== wow");
+    print(token);
     if (token == null) {
       _goToLogin();
       return;

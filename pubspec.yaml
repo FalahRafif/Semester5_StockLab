@@ -36,6 +36,7 @@ dependencies:
   cupertino_icons: ^1.0.8
   flutter_dotenv: ^6.0.0
   shared_preferences: ^2.2.0
+  dio: ^5.9.0  # pastikan versi terbaru dari pub.dev
 
 dev_dependencies:
   flutter_test:

@@ -1,40 +1,41 @@
-import 'dart:convert';
-import 'dart:io';
-import 'package:http/http.dart' as http;
+import 'package:dio/dio.dart';
 import '../models/login_response.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 class LoginRepository {
   final String baseUrl = dotenv.env['BASE_URL']!;
+  final Dio _dio;
+
+  LoginRepository() : _dio = Dio() {
+    _dio.options.baseUrl = baseUrl;
+    _dio.options.headers = {
+      'Content-Type': 'application/json',
+    };
+  }
 
   Future<LoginResponse> login(String email, String password) async {
-    final url = Uri.parse("$baseUrl/stocklab-api/v1/login");
-    print("Calling: $url");
+    final endpoint = '/stocklab-api/v1/login';
+    print("Calling: $baseUrl$endpoint");
 
     try {
-      final response = await http
-          .post(
-        url,
-        headers: {"Content-Type": "application/json"},
-        body: jsonEncode({
-          "username": email,
+      final response = await _dio.post(
+        endpoint,
+        data: {
+          "email": email,
           "password": password,
-        }),
-      )
-          .timeout(const Duration(seconds: 10));
+        },
+      );
 
       print("Status: ${response.statusCode}");
-      print("Body: ${response.body}");
+      print("Body: ${response.data}");
 
-      // Jika sukses
-      return LoginResponse.fromJson(jsonDecode(response.body));
-    }
-    catch (e) {
+      return LoginResponse.fromJson(response.data);
+    } catch (e) {
+      print("Error: $e");
       return LoginResponse(
         success: false,
-        message: "Terjadi kesalahan: $e",
+        message: "Terjadi kesalahan, Username atau Password Salah",
       );
     }
-
   }
 }

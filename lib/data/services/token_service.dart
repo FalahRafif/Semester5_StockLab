@@ -2,23 +2,24 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 class TokenService {
   static const _tokenKey = "token";
-  static const _roleIdKey = "roleId";
-  static const _roleKey = "roleId";
+  static const _userIdKey = "userId";
+  static const _roleKey = "userId";
   static const _expiredKey = "token_expired_at";
 
   // Simpan token + expired
   static Future<void> saveAuth({
     required String token,
-    required int roleId,
+    required int userId,
     required String role,
     int expiresInSeconds = 86400, // default 24 jam jika API tidak kasih expired
   }) async {
     final prefs = await SharedPreferences.getInstance();
     final now = DateTime.now().millisecondsSinceEpoch;
     final expiredAt = now + (expiresInSeconds * 1000);
-
+    print("wew");
+    print(token);
     await prefs.setString(_tokenKey, token);
-    await prefs.setInt(_roleIdKey, roleId);
+    await prefs.setInt(_userIdKey, userId);
     await prefs.setString(_roleKey, role);
     await prefs.setInt(_expiredKey, expiredAt);
   }
@@ -31,11 +32,11 @@ class TokenService {
     return prefs.getString(_tokenKey);
   }
 
-  static Future<int?> getRoleId() async {
+  static Future<int?> getuserId() async {
     if (!await isTokenValid()) return null;
 
     final prefs = await SharedPreferences.getInstance();
-    return prefs.getInt(_roleIdKey);
+    return prefs.getInt(_userIdKey);
   }
 
   static Future<String?> getRole() async {
@@ -59,7 +60,7 @@ class TokenService {
   static Future<void> clear() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(_tokenKey);
-    await prefs.remove(_roleIdKey);
+    await prefs.remove(_userIdKey);
     await prefs.remove(_roleKey);
     await prefs.remove(_expiredKey);
   }
