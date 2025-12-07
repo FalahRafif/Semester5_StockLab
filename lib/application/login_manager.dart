@@ -17,12 +17,15 @@ class LoginManager {
     }
 
     final result = await repo.login(email, password);
-
+    print(email);
+    print(password);
+    print(result.token);
+    print(result.role);
     // Jika sukses → simpan token & role
-    if (result.success && result.token != null && result.roleId != null) {
+    if (result.success && result.token != null && result.role != null) {
       await TokenService.saveAuth(
         token: result.token!,
-        roleId: result.roleId!,
+        userId: result.userId!,
         role: result.role!,
         expiresInSeconds: 86400, // 24 jam
       );
