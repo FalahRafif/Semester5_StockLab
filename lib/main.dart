@@ -1,8 +1,14 @@
 import 'package:flutter/material.dart';
-import 'presentation/screens/wrappers/mobile_wrapper.dart';
+import 'presentation/shared/wrappers/mobile_wrapper.dart';
 import 'presentation/screens/auth/login.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
-void main() {
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  // Load .env
+  await dotenv.load();
+
   runApp(const StockApp());
 }
 

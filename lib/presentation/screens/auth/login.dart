@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
 import '../../../application/login_manager.dart';
-import '../wrappers/mobile_wrapper.dart';
-import '../admin/home.dart';
+import '../../shared/wrappers/mobile_wrapper.dart';
+import '../admin/home.dart' as admin;
+import '../staff/home.dart' as staff;
+import '../../shared/widgets/app_layout.dart';
+import '../../shared/core/color_manager.dart';
+import 'register.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -29,22 +33,25 @@ class _LoginScreenState extends State<LoginScreen> {
 
     if (!mounted) return;
 
-    if (result["success"] == true) {
-      // login sukses → pindah halaman
+    if (result.success) {
+      // Arahkan ke AppLayout
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(builder: (_) => const MobileWrapper(child: HomePage())),
+        MaterialPageRoute(
+          builder: (_) => const MobileWrapper(child: AppLayout()),
+        ),
       );
     } else {
-      // tampilkan pesan error
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(result["message"]),
-          backgroundColor: Colors.redAccent,
+          content: Text(result.message),
+          backgroundColor: ColorManager.error,
         ),
       );
     }
   }
+
+
 
   @override
   Widget build(BuildContext context) {
@@ -53,17 +60,17 @@ class _LoginScreenState extends State<LoginScreen> {
     return Container(
       decoration: const BoxDecoration(
         gradient: LinearGradient(
-          colors: [Color(0xFFE8F3FF), Color(0xFFF5FAFF)],
+          colors: [ColorManager.bgTop, ColorManager.bgBottom],
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
         ),
       ),
       child: SingleChildScrollView(
-        child: SizedBox(
-          height: size.height,
+        child: ConstrainedBox(
+          constraints: BoxConstraints(minHeight: size.height),
           child: Stack(
             children: [
-              // ORNAMENTS
+              // ORNAMENT 1
               Positioned(
                 top: -50,
                 left: -40,
@@ -71,11 +78,11 @@ class _LoginScreenState extends State<LoginScreen> {
                   width: 180,
                   height: 180,
                   decoration: BoxDecoration(
-                    color: const Color(0xFFB7DBFF).withOpacity(0.35),
+                    color: ColorManager.ornamentBlue1.withOpacity(0.35),
                     shape: BoxShape.circle,
                     boxShadow: [
                       BoxShadow(
-                        color: const Color(0xFFB7DBFF).withOpacity(0.25),
+                        color: ColorManager.ornamentBlue1.withOpacity(0.25),
                         blurRadius: 40,
                         spreadRadius: 10,
                         offset: const Offset(0, 6),
@@ -84,6 +91,8 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                 ),
               ),
+
+              // ORNAMENT 2
               Positioned(
                 bottom: -60,
                 right: -30,
@@ -91,11 +100,11 @@ class _LoginScreenState extends State<LoginScreen> {
                   width: 220,
                   height: 220,
                   decoration: BoxDecoration(
-                    color: const Color(0xFF80C8FF).withOpacity(0.30),
+                    color: ColorManager.ornamentBlue2.withOpacity(0.30),
                     shape: BoxShape.circle,
                     boxShadow: [
                       BoxShadow(
-                        color: const Color(0xFF80C8FF).withOpacity(0.22),
+                        color: ColorManager.ornamentBlue2.withOpacity(0.22),
                         blurRadius: 30,
                         spreadRadius: 6,
                         offset: const Offset(0, 6),
@@ -107,6 +116,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
               Column(
                 children: [
+                  // HEADER CLIPPED GRADIENT
                   ClipPath(
                     clipper: _HeaderClipper(),
                     child: Container(
@@ -114,19 +124,19 @@ class _LoginScreenState extends State<LoginScreen> {
                       padding: const EdgeInsets.only(top: 120, bottom: 50),
                       decoration: const BoxDecoration(
                         gradient: LinearGradient(
-                          colors: [Color(0xFF4D9DE0), Color(0xFF6FB6FF)],
+                          colors: [ColorManager.primary, ColorManager.primaryLight],
                           begin: Alignment.topLeft,
                           end: Alignment.bottomRight,
                         ),
                       ),
                       child: Column(
                         children: const [
-                          Icon(Icons.inventory_2_rounded, size: 85, color: Colors.white),
+                          Icon(Icons.inventory_2_rounded, size: 85, color: ColorManager.textWhite),
                           SizedBox(height: 14),
                           Text(
                             "Stock Management",
                             style: TextStyle(
-                              color: Colors.white,
+                              color: ColorManager.textWhite,
                               fontSize: 27,
                               fontWeight: FontWeight.bold,
                             ),
@@ -134,7 +144,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           Text(
                             "Manage your warehouse easily",
                             style: TextStyle(
-                              color: Colors.white70,
+                              color: ColorManager.textWhiteMuted,
                               fontSize: 15,
                             ),
                           ),
@@ -150,7 +160,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     child: Container(
                       padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 28),
                       decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.95),
+                        color: ColorManager.cardBackground.withOpacity(0.95),
                         borderRadius: BorderRadius.circular(30),
                         boxShadow: [
                           BoxShadow(
@@ -159,7 +169,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             offset: const Offset(0, 12),
                           ),
                         ],
-                        border: Border.all(color: Colors.white.withOpacity(0.6)),
+                        border: Border.all(color: ColorManager.cardBorderSoft.withOpacity(0.6)),
                       ),
                       child: Column(
                         children: [
@@ -168,7 +178,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             style: TextStyle(
                               fontSize: 24,
                               fontWeight: FontWeight.bold,
-                              color: Color(0xFF4D5C73),
+                              color: ColorManager.textDark,
                             ),
                           ),
 
@@ -203,15 +213,15 @@ class _LoginScreenState extends State<LoginScreen> {
                                 decoration: BoxDecoration(
                                   borderRadius: BorderRadius.circular(16),
                                   gradient: const LinearGradient(
-                                    colors: [Color(0xFF4D9DE0), Color(0xFF6FB6FF)],
+                                    colors: [ColorManager.primary, ColorManager.primaryLight],
                                     begin: Alignment.topLeft,
                                     end: Alignment.bottomRight,
                                   ),
-                                  boxShadow: const [
+                                  boxShadow: [
                                     BoxShadow(
-                                      color: Color(0xFF89C2FF),
+                                      color: ColorManager.shadowPrimary,
                                       blurRadius: 15,
-                                      offset: Offset(0, 8),
+                                      offset: const Offset(0, 8),
                                     ),
                                   ],
                                 ),
@@ -221,9 +231,28 @@ class _LoginScreenState extends State<LoginScreen> {
                                   style: const TextStyle(
                                     fontSize: 17,
                                     fontWeight: FontWeight.bold,
-                                    color: Colors.white,
+                                    color: ColorManager.textWhite,
                                   ),
                                 ),
+                              ),
+                            ),
+                          ),
+
+                          const SizedBox(height: 18),
+
+                          GestureDetector(
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(builder: (_) => const MobileWrapper(child: RegisterScreen())),
+                              );
+                            },
+                            child: const Text(
+                              "Belum punya akun? Daftar",
+                              style: TextStyle(
+                                color: ColorManager.textPrimary,
+                                fontWeight: FontWeight.w600,
+                                fontSize: 14,
                               ),
                             ),
                           ),
@@ -241,6 +270,7 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 }
 
+// INPUT FIELD
 class _StyledInput extends StatelessWidget {
   final TextEditingController controller;
   final String label;
@@ -261,9 +291,10 @@ class _StyledInput extends StatelessWidget {
       obscureText: obscure,
       decoration: InputDecoration(
         labelText: label,
-        prefixIcon: Icon(icon),
+        labelStyle: const TextStyle(color: ColorManager.textDark),
+        prefixIcon: Icon(icon, color: ColorManager.primary),
         filled: true,
-        fillColor: const Color(0xFFF0F5FF),
+        fillColor: ColorManager.inputFill,
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(15),
           borderSide: BorderSide.none,
@@ -273,6 +304,7 @@ class _StyledInput extends StatelessWidget {
   }
 }
 
+// HEADER CLIPPER
 class _HeaderClipper extends CustomClipper<Path> {
   @override
   Path getClip(Size size) {
