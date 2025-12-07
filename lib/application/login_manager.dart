@@ -1,5 +1,6 @@
 import '../data/repositories/login_repository.dart';
 import '../data/models/login_response.dart';
+import '../data/services/token_service.dart';
 
 class LoginManager {
   final repo = LoginRepository();
@@ -16,7 +17,19 @@ class LoginManager {
     }
 
     final result = await repo.login(email, password);
-    print(result);
+
+    // Jika sukses → simpan token & role
+    if (result.success && result.token != null && result.roleId != null) {
+      await TokenService.saveAuth(
+        token: result.token!,
+        roleId: result.roleId!,
+        role: result.role!,
+        expiresInSeconds: 86400, // 24 jam
+      );
+    }
+
+    final roleId = await TokenService.getRole();
+    print(roleId);
     return result;
   }
 }

@@ -3,6 +3,7 @@ import '../../../application/login_manager.dart';
 import '../../shared/wrappers/mobile_wrapper.dart';
 import '../admin/home.dart' as admin;
 import '../staff/home.dart' as staff;
+import '../../shared/widgets/app_layout.dart';
 import '../../shared/core/color_manager.dart';
 import 'register.dart';
 
@@ -33,24 +34,13 @@ class _LoginScreenState extends State<LoginScreen> {
     if (!mounted) return;
 
     if (result.success) {
-      // Role Admin
-      if (result.roleId == 1) {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(
-            builder: (_) => const MobileWrapper(child: admin.HomePage()),
-          ),
-        );
-      }
-      // Role Staff
-      else {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(
-            builder: (_) => const MobileWrapper(child: staff.HomePage()),
-          ),
-        );
-      }
+      // Arahkan ke AppLayout
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (_) => const MobileWrapper(child: AppLayout()),
+        ),
+      );
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -60,6 +50,7 @@ class _LoginScreenState extends State<LoginScreen> {
       );
     }
   }
+
 
 
   @override
