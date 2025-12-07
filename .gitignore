@@ -8,6 +8,8 @@
 *.lock
 .DS_Store
 
+.env
+
 .atom/
 .build/
 .buildlog/
