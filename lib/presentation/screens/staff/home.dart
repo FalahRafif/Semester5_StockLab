@@ -6,10 +6,15 @@ class HomePage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      appBar: AppBar(
+        title: const Text("Dashboard"),
+        backgroundColor: Colors.blueAccent,
+        foregroundColor: Colors.white,
+      ),
       body: const Center(
         child: Text(
-          "Selamat datang di Dashboard Admin!",
-          style: TextStyle(fontSize: 18),
+          "Selamat datang di stafff!",
+          style: TextStyle(fontSize: 20),
         ),
       ),
     );

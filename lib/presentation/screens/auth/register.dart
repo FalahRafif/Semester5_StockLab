@@ -1,0 +1,319 @@
+import 'package:flutter/material.dart';
+import '../../shared/core/color_manager.dart';
+import '../auth/login.dart';
+import '../../shared/wrappers/mobile_wrapper.dart';
+
+class RegisterScreen extends StatefulWidget {
+  const RegisterScreen({super.key});
+
+  @override
+  State<RegisterScreen> createState() => _RegisterScreenState();
+}
+
+class _RegisterScreenState extends State<RegisterScreen> {
+  final nameC = TextEditingController();
+  final emailC = TextEditingController();
+  final passC = TextEditingController();
+  final pass2C = TextEditingController();
+
+  bool isLoading = false;
+
+  Future<void> handleRegister() async {
+    setState(() => isLoading = true);
+    await Future.delayed(const Duration(seconds: 1));
+    setState(() => isLoading = false);
+
+    if (!mounted) return;
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text("Register sukses (contoh)")),
+    );
+
+    Navigator.pop(context);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final size = MediaQuery.of(context).size;
+
+    return Scaffold(
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            colors: [
+              ColorManager.bgTop,
+              ColorManager.bgBottom,
+            ],
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+          ),
+        ),
+        child: SingleChildScrollView(
+          child: ConstrainedBox(
+            constraints: BoxConstraints(minHeight: size.height),
+            child: Stack(
+              children: [
+                // ─────────────────────────────────────────────
+                // ORNAMENT CIRCLES
+                // ─────────────────────────────────────────────
+                Positioned(
+                  top: -50,
+                  left: -40,
+                  child: Container(
+                    width: 180,
+                    height: 180,
+                    decoration: BoxDecoration(
+                      color: ColorManager.ornamentBlue1.withOpacity(0.35),
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                ),
+                Positioned(
+                  bottom: -60,
+                  right: -30,
+                  child: Container(
+                    width: 220,
+                    height: 220,
+                    decoration: BoxDecoration(
+                      color: ColorManager.ornamentBlue2.withOpacity(0.30),
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                ),
+
+                Column(
+                  children: [
+                    // ─────────────────────────────────────────────
+                    // HEADER
+                    // ─────────────────────────────────────────────
+                    ClipPath(
+                      clipper: _HeaderClipper(),
+                      child: Container(
+                        width: size.width,
+                        padding: const EdgeInsets.only(top: 120, bottom: 50),
+                        decoration: const BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [
+                              ColorManager.primary,
+                              ColorManager.primaryLight
+                            ],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                          ),
+                        ),
+                        child: Column(
+                          children: const [
+                            Icon(
+                              Icons.person_add_alt_1,
+                              size: 85,
+                              color: ColorManager.textWhite,
+                            ),
+                            SizedBox(height: 14),
+                            Text(
+                              "Create Account",
+                              style: TextStyle(
+                                color: ColorManager.textWhite,
+                                fontSize: 27,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            Text(
+                              "Register your stock system account",
+                              style: TextStyle(
+                                color: ColorManager.textWhiteMuted,
+                                fontSize: 15,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+
+                    const SizedBox(height: 35),
+
+                    // ─────────────────────────────────────────────
+                    // FORM CONTAINER
+                    // ─────────────────────────────────────────────
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 25),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 22, vertical: 28),
+                        decoration: BoxDecoration(
+                          color: ColorManager.cardBackground.withOpacity(0.95),
+                          borderRadius: BorderRadius.circular(30),
+                          boxShadow: [
+                            BoxShadow(
+                              color: ColorManager.shadowPrimary,
+                              blurRadius: 25,
+                              offset: const Offset(0, 12),
+                            ),
+                          ],
+                        ),
+                        child: Column(
+                          children: [
+                            const Text(
+                              "Register",
+                              style: TextStyle(
+                                fontSize: 24,
+                                fontWeight: FontWeight.bold,
+                                color: ColorManager.textDark,
+                              ),
+                            ),
+
+                            const SizedBox(height: 25),
+
+                            _StyledInput(
+                              controller: nameC,
+                              label: "Full Name",
+                              icon: Icons.person,
+                            ),
+                            const SizedBox(height: 15),
+
+                            _StyledInput(
+                              controller: emailC,
+                              label: "Email",
+                              icon: Icons.email_rounded,
+                            ),
+                            const SizedBox(height: 15),
+
+                            _StyledInput(
+                              controller: passC,
+                              label: "Password",
+                              icon: Icons.lock_rounded,
+                              obscure: true,
+                            ),
+                            const SizedBox(height: 15),
+
+                            _StyledInput(
+                              controller: pass2C,
+                              label: "Confirm Password",
+                              icon: Icons.lock_outline_rounded,
+                              obscure: true,
+                            ),
+
+                            const SizedBox(height: 30),
+
+                            // ─────────────────────────────────────────────
+                            // BUTTON REGISTER
+                            // ─────────────────────────────────────────────
+                            SizedBox(
+                              width: double.infinity,
+                              child: GestureDetector(
+                                onTap: isLoading ? null : handleRegister,
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(
+                                      vertical: 15),
+                                  decoration: BoxDecoration(
+                                    borderRadius: BorderRadius.circular(16),
+                                    gradient: const LinearGradient(
+                                      colors: [
+                                        ColorManager.primary,
+                                        ColorManager.primaryLight
+                                      ],
+                                      begin: Alignment.topLeft,
+                                      end: Alignment.bottomRight,
+                                    ),
+                                  ),
+                                  alignment: Alignment.center,
+                                  child: Text(
+                                    isLoading ? "Loading..." : "Register",
+                                    style: const TextStyle(
+                                      fontSize: 17,
+                                      fontWeight: FontWeight.bold,
+                                      color: ColorManager.textWhite,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+
+                            const SizedBox(height: 20),
+
+                            GestureDetector(
+                              onTap: () {
+                                Navigator.pushReplacement(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) => const MobileWrapper(
+                                      child: LoginScreen(),
+                                    ),
+                                  ),
+                                );
+                              },
+                              child: const Text(
+                                "Sudah punya akun? Login",
+                                style: TextStyle(
+                                  color: ColorManager.textPrimary,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────
+// STYLED INPUT COMPONENT
+// ─────────────────────────────────────────────
+class _StyledInput extends StatelessWidget {
+  final TextEditingController controller;
+  final String label;
+  final IconData icon;
+  final bool obscure;
+
+  const _StyledInput({
+    required this.controller,
+    required this.label,
+    required this.icon,
+    this.obscure = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return TextField(
+      controller: controller,
+      obscureText: obscure,
+      decoration: InputDecoration(
+        labelText: label,
+        prefixIcon: Icon(icon),
+        filled: true,
+        fillColor: ColorManager.inputFill,
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(15),
+          borderSide: BorderSide.none,
+        ),
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────
+// CUSTOM HEADER CLIPPER
+// ─────────────────────────────────────────────
+class _HeaderClipper extends CustomClipper<Path> {
+  @override
+  Path getClip(Size size) {
+    final path = Path();
+    path.lineTo(0, size.height - 40);
+    path.quadraticBezierTo(
+        size.width * 0.5, size.height, size.width, size.height - 40);
+    path.lineTo(size.width, 0);
+    path.close();
+    return path;
+  }
+
+  @override
+  bool shouldReclip(covariant CustomClipper<Path> oldClipper) => false;
+}
