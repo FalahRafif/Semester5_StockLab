@@ -3,6 +3,7 @@ import '../../../data/services/token_service.dart';
 import 'app_bottom_nav.dart';
 import 'menu_builder.dart';
 import 'app_topbar.dart';
+import '../wrappers/mobile_wrapper.dart';
 
 // Import halaman sesuai role
 import '../../screens/admin/home.dart';
@@ -11,6 +12,8 @@ import '../../screens/admin/home.dart';
 //
 // import '../../screens/staff/home.dart';
 // import '../../screens/staff/tasks.dart';
+
+import '../../screens/auth/login.dart';
 
 class AppLayout extends StatefulWidget {
   const AppLayout({super.key});
@@ -35,7 +38,7 @@ class _AppLayoutState extends State<AppLayout> {
     final token = await TokenService.getToken();
 
     if (token == null) {
-      if (mounted) Navigator.pushReplacementNamed(context, '/login');
+      _goToLogin();
       return;
     }
 
@@ -46,6 +49,17 @@ class _AppLayoutState extends State<AppLayout> {
       menus = MenuBuilder.build(role);
       pages = _buildPages(role);
     });
+  }
+
+  void _goToLogin() {
+    if (mounted) {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (_) => const MobileWrapper(child: LoginScreen()),
+        ),
+      );
+    }
   }
 
   List<Widget> _buildPages(String role) {
@@ -59,15 +73,14 @@ class _AppLayoutState extends State<AppLayout> {
 
       case 'staff':
         return [
-          const HomePage()
+          const HomePage(),
           // const StaffHomePage(),
           // const StaffTaskPage(),
         ];
 
       default:
         return [
-          const HomePage()
-          // const StaffHomePage(), // atau user-home
+          const LoginScreen(),
         ];
     }
   }
@@ -82,13 +95,13 @@ class _AppLayoutState extends State<AppLayout> {
 
     return Scaffold(
       appBar: AppTopBar(
-        title: role.toUpperCase() + " Dashboard",
+        title: "${role.toUpperCase()} Dashboard",
         onSettingsTap: () {
           // Navigate ke settings
         },
         onLogoutTap: () async {
           await TokenService.clear();
-          if (mounted) Navigator.pushReplacementNamed(context, '/login');
+          _goToLogin();
         },
         onProfileTap: () {
           // Navigate ke profile page
@@ -101,6 +114,5 @@ class _AppLayoutState extends State<AppLayout> {
         onTap: (i) => setState(() => index = i),
       ),
     );
-
   }
 }
