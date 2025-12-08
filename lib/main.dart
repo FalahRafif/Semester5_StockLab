@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'presentation/shared/wrappers/mobile_wrapper.dart';
 import 'presentation/screens/auth/login.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'presentation/screens/splash/splash_screen.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -25,7 +26,9 @@ class StockApp extends StatelessWidget {
         useMaterial3: true,
         fontFamily: "Roboto",
       ),
-      home: const MobileWrapper(child: LoginScreen()),
+      // home: const MobileWrapper(child: LoginScreen()),
+      home: const MobileWrapper(child: SplashScreen()),
+
     );
   }
 }
