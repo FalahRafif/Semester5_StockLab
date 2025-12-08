@@ -37,6 +37,7 @@ dependencies:
   flutter_dotenv: ^6.0.0
   shared_preferences: ^2.2.0
   dio: ^5.9.0  # pastikan versi terbaru dari pub.dev
+  fl_chart: ^0.68.0
 
 dev_dependencies:
   flutter_test:

@@ -24,6 +24,8 @@ class ColorManager {
   static const Color cardBorderSoft = Color(0xFFFFFFFF);
 
   static const Color inputFill = Color(0xFFF0F5FF);
+  static const Color border = Color(0xFFE3E8F1); // border modern clean
+  static const Color borderSoft = Color(0xFFF2F4F8); // untuk subtle cases
 
   // ─────────────────────────────────────────────
   //  TEXT COLORS
