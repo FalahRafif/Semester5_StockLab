@@ -4,15 +4,10 @@ import 'app_bottom_nav.dart';
 import 'menu_builder.dart';
 import 'app_topbar.dart';
 import '../wrappers/mobile_wrapper.dart';
+import 'app_bottom_nav_more.dart';
 
-// Import halaman sesuai role
-import '../../screens/admin/home.dart';
-// import '../../screens/admin/user.dart';
-// import '../../screens/admin/settings.dart';
-//
-// import '../../screens/staff/home.dart';
-// import '../../screens/staff/tasks.dart';
-
+import '../../screens/admin/home.dart' as admin;
+import '../../screens/staff/home.dart' as staff;
 import '../../screens/auth/login.dart';
 
 class AppLayout extends StatefulWidget {
@@ -25,7 +20,9 @@ class AppLayout extends StatefulWidget {
 class _AppLayoutState extends State<AppLayout> {
   int index = 0;
   String role = '';
+
   List<BottomNavigationBarItem> menus = [];
+  List<BottomNavigationBarItem> moreMenus = [];
   List<Widget> pages = [];
 
   @override
@@ -36,55 +33,81 @@ class _AppLayoutState extends State<AppLayout> {
 
   Future<void> _initAuth() async {
     final token = await TokenService.getToken();
-    print("=========== wow");
-    print(token);
     if (token == null) {
       _goToLogin();
       return;
     }
 
     final r = await TokenService.getRole();
+    role = r ?? 'guest';
 
-    setState(() {
-      role = r ?? 'guest';
-      menus = MenuBuilder.build(role);
-      pages = _buildPages(role);
-    });
+    final allMenus = MenuBuilder.build(role);
+
+    // Pisahkan bottom nav + more menu
+    menus = [
+      ...allMenus.take(MenuBuilder.maxBottomNav),
+      const BottomNavigationBarItem(
+        icon: Icon(Icons.more_horiz_rounded),
+        label: "More",
+      ),
+    ];
+
+    moreMenus = allMenus.skip(MenuBuilder.maxBottomNav).toList();
+
+    pages = _buildPages(role);
+
+    setState(() {});
   }
 
   void _goToLogin() {
-    if (mounted) {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(
-          builder: (_) => const MobileWrapper(child: LoginScreen()),
-        ),
-      );
-    }
+    if (!mounted) return;
+
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(
+        builder: (_) => const MobileWrapper(child: LoginScreen()),
+      ),
+    );
   }
 
   List<Widget> _buildPages(String role) {
-    switch (role.toLowerCase()) {
-      case 'admin':
-        return [
-          const HomePage(),
-          // const AdminUserPage(),
-          // const AdminSettingsPage(),
-        ];
-
-      case 'staff':
-        return [
-          const HomePage(),
-          // const StaffHomePage(),
-          // const StaffTaskPage(),
-        ];
-
-      default:
-        return [
-          const LoginScreen(),
-        ];
+    if (role == "admin") {
+      return [
+        const admin.HomePage(), // Dashboard
+        const staff.HomePage(), // User
+        const admin.HomePage(), // Produk
+        const admin.HomePage(), // Kategori
+        const admin.HomePage(), // Satuan
+        const admin.HomePage(), // Stok
+        const admin.HomePage(), // Laporan
+        const admin.HomePage(), // Setting
+      ];
     }
+
+    return [const LoginScreen()];
   }
+
+  void _openMoreMenu() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) {
+        return FractionallySizedBox(
+          heightFactor: .85,
+          child: AppBottomNavMore(
+            menus: moreMenus,
+            startIndex: MenuBuilder.maxBottomNav,
+            onSelect: (realIndex) {
+              Navigator.pop(context);
+              setState(() => index = realIndex);
+            },
+          ),
+        );
+      },
+    );
+  }
+
 
   @override
   Widget build(BuildContext context) {
@@ -97,22 +120,24 @@ class _AppLayoutState extends State<AppLayout> {
     return Scaffold(
       appBar: AppTopBar(
         title: "${role.toUpperCase()} Dashboard",
-        onSettingsTap: () {
-          // Navigate ke settings
-        },
+        onSettingsTap: () {},
         onLogoutTap: () async {
           await TokenService.clear();
           _goToLogin();
         },
-        onProfileTap: () {
-          // Navigate ke profile page
-        },
+        onProfileTap: () {},
       ),
       body: pages[index],
       bottomNavigationBar: AppBottomNav(
-        index: index,
+        index: index < menus.length ? index : 0,
         items: menus,
-        onTap: (i) => setState(() => index = i),
+        onTap: (i) {
+          if (i == menus.length - 1) {
+            _openMoreMenu();
+          } else {
+            setState(() => index = i);
+          }
+        },
       ),
     );
   }
