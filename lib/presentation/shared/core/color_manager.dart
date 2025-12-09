@@ -7,6 +7,7 @@ class ColorManager {
   static const Color primary = Color(0xFF4D9DE0);
   static const Color primaryLight = Color(0xFF6FB6FF);
   static const Color primarySoft = Color(0xFF89C2FF);
+  static const Color primaryDark = Color(0xFF3B7DB3);
 
   // ─────────────────────────────────────────────
   //  BACKGROUND COLORS (gradient + ornaments)
