@@ -10,6 +10,7 @@ import '../../screens/admin/home.dart' as admin;
 import '../../screens/staff/home.dart' as staff;
 import '../../screens/auth/login.dart';
 import '../../screens/admin/user/list_user.dart';
+import '../../screens/admin/product/list_product.dart';
 
 class AppLayout extends StatefulWidget {
   const AppLayout({super.key});
@@ -24,7 +25,9 @@ class _AppLayoutState extends State<AppLayout> {
 
   List<BottomNavigationBarItem> menus = [];
   List<BottomNavigationBarItem> moreMenus = [];
-  List<Widget> pages = [];
+  List<Widget> get pages {
+    return _buildPages(role);
+  }
 
   @override
   void initState() {
@@ -55,8 +58,6 @@ class _AppLayoutState extends State<AppLayout> {
 
     moreMenus = allMenus.skip(MenuBuilder.maxBottomNav).toList();
 
-    pages = _buildPages(role);
-
     setState(() {});
   }
 
@@ -74,19 +75,20 @@ class _AppLayoutState extends State<AppLayout> {
   List<Widget> _buildPages(String role) {
     if (role == "admin") {
       return [
-        const admin.HomePage(), // Dashboard
-        const ListUserPage(), // User
-        const admin.HomePage(), // Produk
-        const admin.HomePage(), // Kategori
-        const admin.HomePage(), // Satuan
-        const admin.HomePage(), // Stok
-        const admin.HomePage(), // Laporan
-        const admin.HomePage(), // Setting
+        const admin.HomePage(),      // 0 Dashboard
+        const ListUserPage(),        // 1 User
+        const ListProductPage(),     // 2 Stok
+        const PlaceholderPage(title: "Laporan"),   // 3 Laporan
+        const ListProductPage(),     // 4 Produk
+        const PlaceholderPage(title: "Kategori"),  // 5 Kategori
+        const PlaceholderPage(title: "Satuan"),    // 6 Satuan
+        const PlaceholderPage(title: "Setting"),   // 7 Setting
       ];
     }
 
     return [const LoginScreen()];
   }
+
 
   void _openMoreMenu() {
     showModalBottomSheet(
@@ -100,7 +102,7 @@ class _AppLayoutState extends State<AppLayout> {
             menus: moreMenus,
             startIndex: MenuBuilder.maxBottomNav,
             onSelect: (realIndex) {
-              Navigator.pop(context);
+              // HAPUS Navigator.pop(context) di sini — AppBottomNavMore sudah mem-popol sendiri.
               setState(() => index = realIndex);
             },
           ),
@@ -108,6 +110,7 @@ class _AppLayoutState extends State<AppLayout> {
       },
     );
   }
+
 
 
   @override
@@ -143,3 +146,21 @@ class _AppLayoutState extends State<AppLayout> {
     );
   }
 }
+
+class PlaceholderPage extends StatelessWidget {
+  final String title;
+  const PlaceholderPage({super.key, required this.title});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: Center(
+        child: Text(
+          title,
+          style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+        ),
+      ),
+    );
+  }
+}
+
