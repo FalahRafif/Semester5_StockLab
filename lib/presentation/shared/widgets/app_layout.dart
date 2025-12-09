@@ -9,6 +9,7 @@ import 'app_bottom_nav_more.dart';
 import '../../screens/admin/home.dart' as admin;
 import '../../screens/staff/home.dart' as staff;
 import '../../screens/auth/login.dart';
+import '../../screens/admin/user/list_user.dart';
 
 class AppLayout extends StatefulWidget {
   const AppLayout({super.key});
@@ -74,7 +75,7 @@ class _AppLayoutState extends State<AppLayout> {
     if (role == "admin") {
       return [
         const admin.HomePage(), // Dashboard
-        const staff.HomePage(), // User
+        const ListUserPage(), // User
         const admin.HomePage(), // Produk
         const admin.HomePage(), // Kategori
         const admin.HomePage(), // Satuan
