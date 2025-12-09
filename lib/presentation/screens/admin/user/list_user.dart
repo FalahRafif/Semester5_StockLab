@@ -61,6 +61,116 @@ class _ListUserPageState extends State<ListUserPage>
       isFiltered = true;
       pageIndex = 0; // reset ke halaman pertama
     });
+
+
+
+  }
+  Future<bool> _confirmDelete(BuildContext context, String username) async {
+    return await showGeneralDialog<bool>(
+      context: context,
+      barrierDismissible: true,
+      barrierLabel: "",
+      transitionDuration: const Duration(milliseconds: 220),
+      pageBuilder: (_, __, ___) {
+        return const SizedBox.shrink(); // Required but not used
+      },
+      transitionBuilder: (context, anim1, anim2, child) {
+        return Transform.scale(
+          scale: 0.9 + (anim1.value * 0.1),
+          child: Opacity(
+            opacity: anim1.value,
+            child: Dialog(
+              insetPadding: const EdgeInsets.symmetric(horizontal: 26),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Container(
+                padding: const EdgeInsets.all(22),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(20),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.08),
+                      blurRadius: 20,
+                      offset: const Offset(0, 6),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // TITLE
+                    Text(
+                      "Hapus User",
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.w700,
+                        color: ColorManager.textDark,
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+
+                    Text(
+                      "Apakah kamu yakin ingin menghapus user \"$username\"?",
+                      style: TextStyle(
+                        color: ColorManager.textDark.withOpacity(0.75),
+                        fontSize: 14.5,
+                        height: 1.45,
+                      ),
+                    ),
+
+                    const SizedBox(height: 26),
+
+                    // BUTTONS
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        // CANCEL
+                        TextButton(
+                          onPressed: () => Navigator.pop(context, false),
+                          style: TextButton.styleFrom(
+                            foregroundColor: ColorManager.textDark,
+                          ),
+                          child: const Text(
+                            "Batal",
+                            style: TextStyle(fontWeight: FontWeight.w600),
+                          ),
+                        ),
+                        const SizedBox(width: 6),
+
+                        // DELETE
+                        ElevatedButton(
+                          onPressed: () => Navigator.pop(context, true),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.redAccent,
+                            shadowColor: Colors.redAccent.withOpacity(0.3),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            padding: const EdgeInsets.symmetric(
+                                vertical: 12, horizontal: 20),
+                          ),
+                          child: const Text(
+                            "Hapus",
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+    ) ??
+        false;
   }
 
   @override
@@ -193,8 +303,17 @@ class _ListUserPageState extends State<ListUserPage>
                               IconButton(
                                 icon: const Icon(Icons.delete_outline,
                                     color: Colors.redAccent, size: 22),
-                                onPressed: () {},
-                              )
+                                onPressed: () async {
+                                  final confirm = await _confirmDelete(context, u["name"]!);
+
+                                  if (confirm) {
+                                    setState(() {
+                                      allUsers.remove(u);
+                                      if (isFiltered) filteredUsers.remove(u);
+                                    });
+                                  }
+                                },
+                              ),
                             ],
                           ),
                         );
