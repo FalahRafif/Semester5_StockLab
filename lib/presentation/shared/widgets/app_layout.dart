@@ -13,18 +13,25 @@ import '../../screens/admin/user/list_user.dart';
 import '../../screens/admin/product/list_product.dart';
 
 class AppLayout extends StatefulWidget {
-  const AppLayout({super.key});
+  /// ⬅️ TAMBAHAN: index awal menu
+  final int initialIndex;
+
+  const AppLayout({
+    super.key,
+    this.initialIndex = 0,
+  });
 
   @override
   State<AppLayout> createState() => _AppLayoutState();
 }
 
 class _AppLayoutState extends State<AppLayout> {
-  int index = 0;
+  late int index; // ⬅️ sekarang di-init dari widget
   String role = '';
 
   List<BottomNavigationBarItem> menus = [];
   List<BottomNavigationBarItem> moreMenus = [];
+
   List<Widget> get pages {
     return _buildPages(role);
   }
@@ -32,6 +39,7 @@ class _AppLayoutState extends State<AppLayout> {
   @override
   void initState() {
     super.initState();
+    index = widget.initialIndex; // ⬅️ KUNCI UTAMA
     _initAuth();
   }
 
@@ -47,7 +55,7 @@ class _AppLayoutState extends State<AppLayout> {
 
     final allMenus = MenuBuilder.build(role);
 
-    // Pisahkan bottom nav + more menu
+    // Bottom nav utama + tombol More
     menus = [
       ...allMenus.take(MenuBuilder.maxBottomNav),
       const BottomNavigationBarItem(
@@ -56,7 +64,13 @@ class _AppLayoutState extends State<AppLayout> {
       ),
     ];
 
+    // Menu sisanya masuk ke More
     moreMenus = allMenus.skip(MenuBuilder.maxBottomNav).toList();
+
+    // Safety: pastikan index tidak out of range
+    if (index >= _buildPages(role).length) {
+      index = 0;
+    }
 
     setState(() {});
   }
@@ -75,20 +89,25 @@ class _AppLayoutState extends State<AppLayout> {
   List<Widget> _buildPages(String role) {
     if (role == "admin") {
       return [
-        const admin.HomePage(),      // 0 Dashboard
-        const ListUserPage(),        // 1 User
-        const ListProductPage(),     // 2 Stok
-        const PlaceholderPage(title: "Laporan"),   // 3 Laporan
-        const ListProductPage(),     // 4 Produk
-        const PlaceholderPage(title: "Kategori"),  // 5 Kategori
-        const PlaceholderPage(title: "Satuan"),    // 6 Satuan
-        const PlaceholderPage(title: "Setting"),   // 7 Setting
+        const admin.HomePage(),            // 0 Dashboard
+        const ListUserPage(),              // 1 User
+        const ListProductPage(),           // 2 Stok
+        const PlaceholderPage(title: "Laporan"), // 3
+        const ListProductPage(),           // 4 Produk
+        const PlaceholderPage(title: "Kategori"), // 5
+        const PlaceholderPage(title: "Satuan"),   // 6
+        const PlaceholderPage(title: "Setting"),  // 7
+      ];
+    }
+
+    if (role == "staff") {
+      return [
+        const staff.HomePage(),
       ];
     }
 
     return [const LoginScreen()];
   }
-
 
   void _openMoreMenu() {
     showModalBottomSheet(
@@ -102,7 +121,6 @@ class _AppLayoutState extends State<AppLayout> {
             menus: moreMenus,
             startIndex: MenuBuilder.maxBottomNav,
             onSelect: (realIndex) {
-              // HAPUS Navigator.pop(context) di sini — AppBottomNavMore sudah mem-popol sendiri.
               setState(() => index = realIndex);
             },
           ),
@@ -110,8 +128,6 @@ class _AppLayoutState extends State<AppLayout> {
       },
     );
   }
-
-
 
   @override
   Widget build(BuildContext context) {
@@ -157,10 +173,12 @@ class PlaceholderPage extends StatelessWidget {
       body: Center(
         child: Text(
           title,
-          style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+          style: const TextStyle(
+            fontSize: 24,
+            fontWeight: FontWeight.bold,
+          ),
         ),
       ),
     );
   }
 }
-

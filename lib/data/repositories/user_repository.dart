@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import '../models/user_response.dart';
 import '../services/token_service.dart';
+import 'dart:io';
 
 class UserRepository {
   final String baseUrl = dotenv.env['BASE_URL']!;
@@ -51,4 +52,63 @@ class UserRepository {
       );
     }
   }
+
+  Future<UserResponse> createUser({
+    required String email,
+    required String password,
+    required String name,
+    required String phone,
+    File? avatarFile,
+  }) async {
+    try {
+      final token = await TokenService.getToken();
+      if (token == null) {
+        return UserResponse(
+          success: false,
+          message: 'Token tidak valid',
+          users: [],
+        );
+      }
+
+      final formData = FormData.fromMap({
+        'email': email,
+        'password': password,
+        'name': name,
+        'phone': phone,
+        if (avatarFile != null)
+          'avatar': await MultipartFile.fromFile(
+            avatarFile.path,
+            filename: avatarFile.path.split('/').last,
+          ),
+      });
+
+      final response = await _dio.post(
+        '/v1/users/create',
+        data: formData,
+        options: Options(
+          headers: {
+            'Authorization': 'Bearer $token',
+          },
+        ),
+      );
+
+      final raw = response.data['data'];
+
+      return UserResponse(
+        success: response.data['status'] == 'success',
+        message: response.data['message'] ?? '',
+        users: raw != null ? [UserData.fromJson(raw)] : [],
+      );
+    } on DioException catch (e) {
+      print('STATUS  : ${e.response?.statusCode}');
+      print('RESPONSE: ${e.response?.data}');
+      return UserResponse(
+        success: false,
+        message: e.response?.data?['message'] ?? 'Gagal membuat user',
+        users: [],
+      );
+    }
+  }
+
+
 }
