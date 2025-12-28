@@ -5,6 +5,11 @@ import 'add_user.dart';
 import '../../../shared/wrappers/mobile_wrapper.dart';
 import 'dart:math';
 
+//user
+import '../../../../application/user_manager.dart';
+import '../../../../data/models/user_response.dart';
+
+
 class ListUserPage extends StatefulWidget {
   const ListUserPage({super.key});
 
@@ -15,13 +20,11 @@ class ListUserPage extends StatefulWidget {
 class _ListUserPageState extends State<ListUserPage>
     with SingleTickerProviderStateMixin {
   // Dummy Data
-  final List<Map<String, String>> allUsers = List.generate(
-    360,
-        (i) => {
-      "name": "User ${i + 1}",
-      "email": "user${i + 1}@example.com",
-    },
-  );
+  final UserManager userManager = UserManager();
+
+  List<Map<String, String>> allUsers = [];
+  bool isLoading = true;
+
 
   bool showMenu = false;
   late AnimationController menuController;
@@ -61,10 +64,8 @@ class _ListUserPageState extends State<ListUserPage>
       isFiltered = true;
       pageIndex = 0; // reset ke halaman pertama
     });
-
-
-
   }
+
   Future<bool> _confirmDelete(BuildContext context, String username) async {
     return await showGeneralDialog<bool>(
       context: context,
@@ -173,6 +174,27 @@ class _ListUserPageState extends State<ListUserPage>
         false;
   }
 
+  Future<void> _loadUsers() async {
+    final result = await userManager.getUsers();
+
+    if (result.success) {
+      setState(() {
+        allUsers = result.users.map((u) {
+          return {
+            "name": u.name,
+            "email": u.email,
+          };
+        }).toList();
+        isLoading = false;
+      });
+    } else {
+      setState(() {
+        isLoading = false;
+      });
+    }
+  }
+
+
   @override
   void initState() {
     super.initState();
@@ -180,6 +202,8 @@ class _ListUserPageState extends State<ListUserPage>
       vsync: this,
       duration: const Duration(milliseconds: 220),
     );
+
+    _loadUsers(); // <-- TAMBAHKAN
   }
 
   @override
@@ -218,7 +242,9 @@ class _ListUserPageState extends State<ListUserPage>
 
                   // LIST USER
                   Expanded(
-                    child: ListView.builder(
+                    child: isLoading
+                        ? const Center(child: CircularProgressIndicator())
+                        : ListView.builder(
                       padding: const EdgeInsets.only(bottom: 80),
                       itemCount: paginatedUsers.length,
                       itemBuilder: (context, i) {
