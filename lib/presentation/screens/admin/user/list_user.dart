@@ -4,6 +4,10 @@ import 'edit_user.dart';
 import 'add_user.dart';
 import '../../../shared/wrappers/mobile_wrapper.dart';
 import 'dart:math';
+import 'dart:convert';
+import 'dart:typed_data';
+
+
 
 //user
 import '../../../../application/user_manager.dart';
@@ -22,7 +26,9 @@ class _ListUserPageState extends State<ListUserPage>
   // Dummy Data
   final UserManager userManager = UserManager();
 
-  List<Map<String, String>> allUsers = [];
+  List<Map<String, String?>> allUsers = [];
+
+
   bool isLoading = true;
 
 
@@ -33,13 +39,13 @@ class _ListUserPageState extends State<ListUserPage>
   final TextEditingController filterEmail = TextEditingController();
   final TextEditingController filterName = TextEditingController();
 
-  List<Map<String, String>> filteredUsers = [];
+  List<Map<String, String?>> filteredUsers = [];
   bool isFiltered = false;
 
   final int pageSize = 8;
   int pageIndex = 0;
 
-  List<Map<String, String>> get paginatedUsers {
+  List<Map<String, String?>> get paginatedUsers {
     final source = isFiltered ? filteredUsers : allUsers;
 
     final start = pageIndex * pageSize;
@@ -183,6 +189,7 @@ class _ListUserPageState extends State<ListUserPage>
           return {
             "name": u.name,
             "email": u.email,
+            "avatar": u.avatar, // ⬅️ BASE64 STRING
           };
         }).toList();
         isLoading = false;
@@ -191,6 +198,21 @@ class _ListUserPageState extends State<ListUserPage>
       setState(() {
         isLoading = false;
       });
+    }
+  }
+
+  Uint8List? decodeAvatar(String? base64) {
+    if (base64 == null || base64.isEmpty) return null;
+
+    try {
+      // Aman jika backend kirim: data:image/png;base64,...
+      final pureBase64 = base64.contains(',')
+          ? base64.split(',').last
+          : base64;
+
+      return base64Decode(pureBase64);
+    } catch (e) {
+      return null;
     }
   }
 
@@ -249,17 +271,15 @@ class _ListUserPageState extends State<ListUserPage>
                       itemCount: paginatedUsers.length,
                       itemBuilder: (context, i) {
                         final u = paginatedUsers[i];
+                        final avatarBytes = decodeAvatar(u["avatar"]);
 
                         return Container(
                           margin: const EdgeInsets.only(bottom: 14),
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 20, vertical: 18),
+                          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
                           decoration: BoxDecoration(
                             color: ColorManager.cardBackground,
                             borderRadius: BorderRadius.circular(16),
-                            border: Border.all(
-                              color: ColorManager.borderSoft,
-                            ),
+                            border: Border.all(color: ColorManager.borderSoft),
                             boxShadow: [
                               BoxShadow(
                                 color: ColorManager.shadowLightBlue,
@@ -272,16 +292,19 @@ class _ListUserPageState extends State<ListUserPage>
                             children: [
                               CircleAvatar(
                                 radius: 22,
-                                backgroundColor:
-                                ColorManager.primary.withOpacity(0.12),
-                                child: Text(
-                                  u["name"]![0],
+                                backgroundColor: ColorManager.primary.withOpacity(0.12),
+                                backgroundImage:
+                                avatarBytes != null ? MemoryImage(avatarBytes) : null,
+                                child: avatarBytes == null
+                                    ? Text(
+                                  u["name"]![0].toUpperCase(),
                                   style: TextStyle(
                                     color: ColorManager.primary,
                                     fontSize: 16,
                                     fontWeight: FontWeight.w700,
                                   ),
-                                ),
+                                )
+                                    : null,
                               ),
                               const SizedBox(width: 16),
 
@@ -302,8 +325,7 @@ class _ListUserPageState extends State<ListUserPage>
                                       u["email"]!,
                                       style: TextStyle(
                                         fontSize: 13,
-                                        color: ColorManager.textDark
-                                            .withOpacity(0.55),
+                                        color: ColorManager.textDark.withOpacity(0.55),
                                       ),
                                     ),
                                   ],
