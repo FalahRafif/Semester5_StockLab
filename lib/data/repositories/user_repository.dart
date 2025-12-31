@@ -172,6 +172,50 @@ class UserRepository {
     }
   }
 
+  Future<UserResponse> deleteUser({
+    required int id,
+  }) async {
+    try {
+      final token = await TokenService.getToken();
+
+      if (token == null) {
+        return UserResponse(
+          success: false,
+          message: 'Token tidak valid',
+          users: [],
+        );
+      }
+
+      final formData = FormData.fromMap({
+        'id': id.toString(),
+      });
+
+      final response = await _dio.delete(
+        '/v1/users/delete/$id',
+        data: formData,
+        options: Options(
+          headers: {
+            'Authorization': 'Bearer $token',
+          },
+        ),
+      );
+
+      return UserResponse(
+        success: response.data['status'] == 'success',
+        message: response.data['message'] ?? '',
+        users: const [], // DELETE tidak mengembalikan user list
+      );
+    } on DioException catch (e) {
+      print('STATUS  : ${e.response?.statusCode}');
+      print('RESPONSE: ${e.response?.data}');
+
+      return UserResponse(
+        success: false,
+        message: e.response?.data?['message'] ?? 'Gagal menghapus user',
+        users: [],
+      );
+    }
+  }
 
 
 }

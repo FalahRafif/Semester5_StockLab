@@ -76,4 +76,16 @@ class UserManager {
       avatarFile: avatarFile,
     );
   }
+
+  Future<UserResponse> deleteUser(int id) async {
+    if (id <= 0) {
+      return UserResponse(
+        success: false,
+        message: 'ID user tidak valid',
+        users: [],
+      );
+    }
+
+    return await _repo.deleteUser(id: id);
+  }
 }
