@@ -6,7 +6,7 @@ import '../../../shared/wrappers/mobile_wrapper.dart';
 import 'dart:math';
 import 'dart:convert';
 import 'dart:typed_data';
-
+import '../../../shared/widgets/app_layout.dart';
 
 
 //user
@@ -181,28 +181,44 @@ class _ListUserPageState extends State<ListUserPage>
   }
 
   Future<void> _loadUsers() async {
+    setState(() {
+      isLoading = true;
+      isFiltered = false;
+      filteredUsers.clear();
+      pageIndex = 0;
+    });
 
-    final result = await userManager.getUsers();
-    await userManager.testing();
-    if (result.success) {
-      setState(() {
-        allUsers = result.users.map((u) {
-          return {
+    try {
+      final result = await userManager.getUsers();
+
+      if (!mounted) return;
+
+      if (result.success) {
+        setState(() {
+          allUsers = result.users.map((u) => {
             "name": u.name,
             "email": u.email,
             "avatar": u.avatar,
             "phone": u.phone,
-            "id": u.id.toString(),// ⬅️ BASE64 STRING
-          };
-        }).toList();
-        isLoading = false;
-      });
-    } else {
-      setState(() {
-        isLoading = false;
-      });
+            "id": u.id.toString(),
+          }).toList();
+
+          isLoading = false;
+        });
+      } else {
+        setState(() => isLoading = false);
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text(result.message)));
+      }
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => isLoading = false);
+      ScaffoldMessenger.of(context)
+          .showSnackBar(const SnackBar(content: Text("Gagal memuat data user")));
     }
   }
+
+
 
   Uint8List? decodeAvatar(String? base64) {
     if (base64 == null || base64.isEmpty) return null;
@@ -355,16 +371,43 @@ class _ListUserPageState extends State<ListUserPage>
                                 },
                               ),
                               IconButton(
-                                icon: const Icon(Icons.delete_outline,
-                                    color: Colors.redAccent, size: 22),
+                                icon: const Icon(
+                                  Icons.delete_outline,
+                                  color: Colors.redAccent,
+                                  size: 22,
+                                ),
                                 onPressed: () async {
                                   final confirm = await _confirmDelete(context, u["name"]!);
+                                  if (!confirm) return;
 
-                                  if (confirm) {
-                                    setState(() {
-                                      allUsers.remove(u);
-                                      if (isFiltered) filteredUsers.remove(u);
-                                    });
+                                  final userId = int.tryParse(u["id"] ?? '0') ?? 0;
+                                  if (userId == 0) return;
+
+                                  // simpan messenger SEBELUM async
+                                  final messenger = ScaffoldMessenger.of(context);
+
+                                  setState(() => isLoading = true);
+
+                                  final result = await userManager.deleteUser(userId);
+
+                                  if (!mounted) return;
+
+                                  setState(() => isLoading = false);
+
+                                  // tampilkan pesan dulu
+                                  messenger.showSnackBar(
+                                    SnackBar(
+                                      content: Text(result.message),
+                                      backgroundColor: result.success ? Colors.green : Colors.red,
+                                      behavior: SnackBarBehavior.floating,
+                                    ),
+                                  );
+
+                                  if (result.success) {
+                                    // tunggu snackbar tampil
+                                    await Future.delayed(const Duration(seconds: 2));
+
+                                    await _loadUsers();
                                   }
                                 },
                               ),
