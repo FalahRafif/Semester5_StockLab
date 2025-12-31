@@ -181,15 +181,18 @@ class _ListUserPageState extends State<ListUserPage>
   }
 
   Future<void> _loadUsers() async {
-    final result = await userManager.getUsers();
 
+    final result = await userManager.getUsers();
+    await userManager.testing();
     if (result.success) {
       setState(() {
         allUsers = result.users.map((u) {
           return {
             "name": u.name,
             "email": u.email,
-            "avatar": u.avatar, // ⬅️ BASE64 STRING
+            "avatar": u.avatar,
+            "phone": u.phone,
+            "id": u.id.toString(),// ⬅️ BASE64 STRING
           };
         }).toList();
         isLoading = false;
@@ -342,6 +345,9 @@ class _ListUserPageState extends State<ListUserPage>
                                         child: UserEditPage(
                                           name: u["name"]!,
                                           email: u["email"]!,
+                                          avatarBase64: u["avatar"]!,
+                                          phone: u['phone']!,
+                                          id: u['id'] ?? "",
                                         ),
                                       ),
                                     ),
