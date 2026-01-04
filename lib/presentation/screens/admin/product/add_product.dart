@@ -21,6 +21,7 @@ class ProductAddPage extends StatefulWidget {
 class _ProductAddPageState extends State<ProductAddPage> {
   final nameCtrl = TextEditingController();
   final brandCtrl = TextEditingController();
+  final priceCtrl = TextEditingController(); // ✅ NEW
   final CategoryManager _categoryManager = CategoryManager();
 
   List<CategoryData> categories = [];
@@ -68,13 +69,26 @@ class _ProductAddPageState extends State<ProductAddPage> {
       return;
     }
 
+    final price = int.tryParse(priceCtrl.text.trim()) ?? -1;
+
+    if (price < 0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("Harga tidak valid"),
+          backgroundColor: Colors.red,
+        ),
+      );
+      setState(() => isLoading = false);
+      return;
+    }
+
     final result = await _productManager.createProduct(
       name: nameCtrl.text.trim(),
       brand: brandCtrl.text.trim(),
       categoryId: selectedCategory!.id,
+      price: price, // ✅ KIRIM PRICE
       imageFile: imageFile,
     );
-
 
     setState(() => isLoading = false);
     if (!mounted) return;
@@ -100,6 +114,7 @@ class _ProductAddPageState extends State<ProductAddPage> {
       );
     }
   }
+
 
   Future<void> _loadCategories() async {
     final result = await _categoryManager.getCategories();
@@ -155,6 +170,14 @@ class _ProductAddPageState extends State<ProductAddPage> {
               const SizedBox(height: 16),
 
               _inputField("Brand", brandCtrl),
+              const SizedBox(height: 16),
+
+              // ✅ PRICE
+              _inputField(
+                "Harga",
+                priceCtrl,
+                keyboardType: TextInputType.number,
+              ),
               const SizedBox(height: 16),
 
               _categoryDropdown(),
