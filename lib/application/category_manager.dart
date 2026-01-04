@@ -54,7 +54,7 @@ class CategoryManager {
     required String id,
   }) async {
     final parsedId = int.tryParse(id) ?? 0;
-
+    print(parsedId);
     if (parsedId <= 0) {
       return CategoryResponse(
         success: false,

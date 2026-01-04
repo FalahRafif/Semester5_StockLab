@@ -11,6 +11,7 @@ import '../../screens/staff/home.dart' as staff;
 import '../../screens/auth/login.dart';
 import '../../screens/admin/user/list_user.dart';
 import '../../screens/admin/product/list_product.dart';
+import '../../screens/admin/categories/list_categories.dart';
 
 class AppLayout extends StatefulWidget {
   /// ⬅️ TAMBAHAN: index awal menu
@@ -94,7 +95,7 @@ class _AppLayoutState extends State<AppLayout> {
         const ListProductPage(),           // 2 Stok
         const PlaceholderPage(title: "Laporan"), // 3
         const ListProductPage(),           // 4 Produk
-        const PlaceholderPage(title: "Kategori"), // 5
+        const ListCategoryPage(), // 5
         const PlaceholderPage(title: "Satuan"),   // 6
         const PlaceholderPage(title: "Setting"),  // 7
       ];
