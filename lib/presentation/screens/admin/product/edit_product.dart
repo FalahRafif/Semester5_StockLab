@@ -19,6 +19,7 @@ class ProductEditPage extends StatefulWidget {
   final String brand;
   final int categoryId;
   final String? avatarBase64;
+  final int price;
 
   const ProductEditPage({
     super.key,
@@ -27,6 +28,7 @@ class ProductEditPage extends StatefulWidget {
     required this.brand,
     required this.categoryId,
     this.avatarBase64,
+    required this.price,
   });
 
   @override
@@ -36,6 +38,8 @@ class ProductEditPage extends StatefulWidget {
 class _ProductEditPageState extends State<ProductEditPage> {
   late TextEditingController nameCtrl;
   late TextEditingController brandCtrl;
+  late TextEditingController priceCtrl; // ✅ NEW
+
 
   final ProductManager _productManager = ProductManager();
   final CategoryManager _categoryManager = CategoryManager();
@@ -59,6 +63,7 @@ class _ProductEditPageState extends State<ProductEditPage> {
 
     nameCtrl = TextEditingController(text: widget.name);
     brandCtrl = TextEditingController(text: widget.brand);
+    priceCtrl = TextEditingController(text: widget.price.toString()); // ✅ NEW
 
     if (widget.avatarBase64 != null && widget.avatarBase64!.isNotEmpty) {
       try {
@@ -69,6 +74,7 @@ class _ProductEditPageState extends State<ProductEditPage> {
 
     _loadCategories();
   }
+
 
   // ------------------------------------------------------------
   // LOAD CATEGORIES
@@ -130,6 +136,18 @@ class _ProductEditPageState extends State<ProductEditPage> {
       return;
     }
 
+    final price = int.tryParse(priceCtrl.text.trim()) ?? -1;
+
+    if (price < 0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("Harga tidak valid"),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
     setState(() => isLoading = true);
 
     final result = await _productManager.updateProduct(
@@ -137,6 +155,7 @@ class _ProductEditPageState extends State<ProductEditPage> {
       name: nameCtrl.text.trim(),
       brand: brandCtrl.text.trim(),
       categoryId: selectedCategory!.id,
+      price: price, // ✅ KIRIM PRICE
       imageFile: imageFile,
     );
 
@@ -196,6 +215,14 @@ class _ProductEditPageState extends State<ProductEditPage> {
               const SizedBox(height: 16),
 
               _inputField("Brand", brandCtrl),
+              const SizedBox(height: 16),
+
+              // ✅ PRICE
+              _inputField(
+                "Harga",
+                priceCtrl,
+                keyboardType: TextInputType.number,
+              ),
               const SizedBox(height: 16),
 
               _categoryDropdown(),
@@ -305,10 +332,10 @@ class _ProductEditPageState extends State<ProductEditPage> {
         ),
         const SizedBox(height: 6),
 
-        isCategoryLoading
-            ? const Center(child: CircularProgressIndicator())
-            : DropdownButtonFormField<CategoryData>(
-          value: selectedCategory,
+        DropdownButtonFormField<CategoryData>(
+          value: categories.contains(selectedCategory)
+              ? selectedCategory
+              : null,
           items: categories.map((c) {
             return DropdownMenuItem<CategoryData>(
               value: c,

@@ -67,129 +67,81 @@ class ProductRepository {
     required String name,
     required int categoryId,
     required String brand,
+    required int price, // ✅ NEW
     File? imageFile,
   }) async {
-    try {
-      final token = await TokenService.getToken();
+    final token = await TokenService.getToken();
 
-      if (token == null) {
-        return ProductResponse(
-          success: false,
-          message: 'Token tidak valid',
-          products: [],
-        );
-      }
-
-      final formData = FormData.fromMap({
-        'name': name,
-        'category_id': categoryId.toString(),
-        'brand': brand,
-        if (imageFile != null)
-          'image': [
-            await MultipartFile.fromFile(
-              imageFile.path,
-              filename: imageFile.path.split('/').last,
-            ),
-          ],
-      });
-
-      final response = await _dio.post(
-        '/v1/products/create',
-        data: formData,
-        options: Options(
-          headers: {
-            'Authorization': 'Bearer $token',
-          },
+    final formData = FormData.fromMap({
+      'name': name,
+      'category_id': categoryId.toString(),
+      'brand': brand,
+      'price': price.toString(), // ✅ NEW
+      if (imageFile != null)
+        'image': await MultipartFile.fromFile(
+          imageFile.path,
+          filename: imageFile.path.split('/').last,
         ),
-      );
+    });
 
-      final raw = response.data['data'];
+    final response = await _dio.post(
+      '/v1/products/create',
+      data: formData,
+      options: Options(
+        headers: {'Authorization': 'Bearer $token'},
+      ),
+    );
 
-      return ProductResponse(
-        success: response.data['status'] == 'success',
-        message: response.data['message'] ?? '',
-        products:
-        raw != null ? [ProductData.fromJson(raw)] : [],
-      );
-    } on DioException catch (e) {
-      return ProductResponse(
-        success: false,
-        message: e.response?.data?['message'] ??
-            'Gagal membuat produk',
-        products: [],
-      );
-    }
+    final raw = response.data['data'];
+
+    return ProductResponse(
+      success: response.data['status'] == 'success',
+      message: response.data['message'] ?? '',
+      products: raw != null ? [ProductData.fromJson(raw)] : [],
+    );
   }
+
 
   Future<ProductResponse> updateProduct({
     required int id,
     required String name,
     required int categoryId,
     required String brand,
+    required int price, // ✅ NEW
     File? imageFile,
   }) async {
-    try {
-      final token = await TokenService.getToken();
+    final token = await TokenService.getToken();
 
-      if (token == null) {
-        return ProductResponse(
-          success: false,
-          message: 'Token tidak valid',
-          products: [],
-        );
-      }
-
-      final formData = FormData.fromMap({
-        'id': id.toString(),
-        'name': name,
-        'category_id': categoryId.toString(),
-        'brand': brand,
-        if (imageFile != null)
-          'image': [
-            await MultipartFile.fromFile(
-              imageFile.path,
-              filename: imageFile.path.split('/').last,
-            ),
-          ],
-      });
-
-      final response = await _dio.patch(
-        '/v1/products/update/$id',
-        data: formData,
-        options: Options(
-          headers: {
-            'Authorization': 'Bearer $token',
-            // jangan set Content-Type manual
-          },
+    final formData = FormData.fromMap({
+      'id': id.toString(),
+      'name': name,
+      'category_id': categoryId.toString(),
+      'brand': brand,
+      'price': price.toString(), // ✅ NEW
+      if (imageFile != null)
+        'image': await MultipartFile.fromFile(
+          imageFile.path,
+          filename: imageFile.path.split('/').last,
         ),
-      );
+    });
 
-      final raw = response.data['data'];
+    final response = await _dio.patch(
+      '/v1/products/update/$id',
+      data: formData,
+      options: Options(
+        headers: {'Authorization': 'Bearer $token'},
+      ),
+    );
 
-      return ProductResponse(
-        success: response.data['status'] == 'success',
-        message: response.data['message'] ?? '',
-        products: raw != null ? [ProductData.fromJson(raw)] : [],
-      );
-    } on DioException catch (e) {
-      print('STATUS  : ${e.response?.statusCode}');
-      print('RESPONSE: ${e.response?.data}');
+    final raw = response.data['data'];
 
-      return ProductResponse(
-        success: false,
-        message:
-        e.response?.data?['message'] ?? 'Gagal update produk',
-        products: [],
-      );
-    } catch (e) {
-      print('ERROR: $e');
-      return ProductResponse(
-        success: false,
-        message: 'Terjadi kesalahan pada sistem',
-        products: [],
-      );
-    }
+    return ProductResponse(
+      success: response.data['status'] == 'success',
+      message: response.data['message'] ?? '',
+      products: raw != null ? [ProductData.fromJson(raw)] : [],
+    );
   }
+
 
   Future<ProductResponse> deleteProduct(int id) async {
     try {
@@ -233,6 +185,7 @@ class ProductRepository {
             category: '',
             sku: '',
             brand: '',
+            price: 0,
             image: null,
           ),
         ]

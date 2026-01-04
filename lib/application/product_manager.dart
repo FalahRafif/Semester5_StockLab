@@ -13,6 +13,7 @@ class ProductManager {
     required String name,
     required int categoryId,
     required String brand,
+    required int price, // ✅ NEW
     File? imageFile,
   }) async {
     if (name.isEmpty || brand.isEmpty) {
@@ -23,19 +24,30 @@ class ProductManager {
       );
     }
 
+    if (price < 0) {
+      return ProductResponse(
+        success: false,
+        message: 'Harga tidak valid',
+        products: [],
+      );
+    }
+
     return await _repo.createProduct(
       name: name,
       categoryId: categoryId,
       brand: brand,
+      price: price,
       imageFile: imageFile,
     );
   }
+
 
   Future<ProductResponse> updateProduct({
     required int id,
     required String name,
     required int categoryId,
     required String brand,
+    required int price, // ✅ NEW
     File? imageFile,
   }) {
     if (id <= 0) {
@@ -58,14 +70,26 @@ class ProductManager {
       );
     }
 
+    if (price < 0) {
+      return Future.value(
+        ProductResponse(
+          success: false,
+          message: 'Harga tidak valid',
+          products: [],
+        ),
+      );
+    }
+
     return _repo.updateProduct(
       id: id,
       name: name,
       categoryId: categoryId,
       brand: brand,
+      price: price,
       imageFile: imageFile,
     );
   }
+
 
   /// ✅ DELETE PRODUCT
   Future<ProductResponse> deleteProduct(int id) async {
