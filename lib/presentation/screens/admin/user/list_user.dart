@@ -190,7 +190,7 @@ class _ListUserPageState extends State<ListUserPage>
 
     try {
       final result = await userManager.getUsers();
-
+      await userManager.testing();
       if (!mounted) return;
 
       if (result.success) {
