@@ -1,7 +1,7 @@
 import '../data/repositories/user_repository.dart';
 import '../data/models/user_response.dart';
 import 'dart:io';
-import 'product_manager.dart';
+import 'transaction_manager.dart';
 
 class UserManager {
   final UserRepository _repo = UserRepository();
@@ -16,7 +16,7 @@ class UserManager {
     //
     // final imageFile = File(filePath);
     //
-    // final result = await ProductManager().deleteProduct(2);
+    // final result = await TransactionManager().createTransaction(productId: "19", userId: "24", quantity: "10", moveType: "IN");
     // print('================');
     // print(result.success);
     // print(result.message);
