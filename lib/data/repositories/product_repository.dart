@@ -233,7 +233,7 @@ class ProductRepository {
             category: '',
             sku: '',
             brand: '',
-            avatar: null,
+            image: null,
           ),
         ]
             : [],

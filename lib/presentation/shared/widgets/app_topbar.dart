@@ -70,38 +70,6 @@ class AppTopBar extends StatelessWidget implements PreferredSizeWidget {
                     icon: Icons.logout,
                     onTap: onLogoutTap,
                   ),
-
-                  const SizedBox(width: 12),
-
-                  // Profile Avatar
-                  GestureDetector(
-                    onTap: onProfileTap,
-                    child: Container(
-                      padding: const EdgeInsets.all(2),
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        border: Border.all(
-                          color: ColorManager.textWhite.withOpacity(0.9),
-                          width: 2,
-                        ),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.15),
-                            blurRadius: 6,
-                            offset: const Offset(0, 3),
-                          ),
-                        ],
-                      ),
-                      child: const CircleAvatar(
-                        radius: 20,
-                        backgroundColor: ColorManager.textWhite,
-                        child: Icon(
-                          Icons.person,
-                          color: ColorManager.primary,
-                        ),
-                      ),
-                    ),
-                  ),
                 ],
               ),
             ],
