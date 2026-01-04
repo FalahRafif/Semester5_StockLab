@@ -13,6 +13,8 @@ import '../../screens/admin/user/list_user.dart';
 import '../../screens/admin/product/list_product.dart';
 import '../../screens/admin/categories/list_categories.dart';
 
+import '../../screens/staff/stock/list_stock.dart';
+
 class AppLayout extends StatefulWidget {
   /// ⬅️ TAMBAHAN: index awal menu
   final int initialIndex;
@@ -92,7 +94,7 @@ class _AppLayoutState extends State<AppLayout> {
       return [
         const admin.HomePage(),                   // 0 Dashboard
         const ListUserPage(),                     // 1 User
-        const ListProductPage(),                  // 2 Stok
+        const ListStockPage(),                  // 2 Stok
         const PlaceholderPage(title: "Laporan"),  // 3
         const ListProductPage(),                  // 4 Produk
         const ListCategoryPage(),                 // 5
@@ -104,7 +106,7 @@ class _AppLayoutState extends State<AppLayout> {
       return [
         const ListProductPage(),
         const ListCategoryPage(),
-        const PlaceholderPage(title: "Stock"),
+        const ListStockPage(),
         const PlaceholderPage(title: "Setting"),
       ];
     }
