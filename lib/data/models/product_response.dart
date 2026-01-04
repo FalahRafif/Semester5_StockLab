@@ -26,7 +26,7 @@ class ProductData {
   final String category;
   final String sku;
   final String brand;
-  final String? avatar;
+  final String? image;
 
   ProductData({
     required this.id,
@@ -34,7 +34,7 @@ class ProductData {
     required this.category,
     required this.sku,
     required this.brand,
-    this.avatar,
+    this.image,
   });
 
   factory ProductData.fromJson(Map<String, dynamic> json) {
@@ -50,7 +50,7 @@ class ProductData {
       category: json['category'] ?? '',
       sku: json['sku'] ?? '',
       brand: json['brand'] ?? '',
-      avatar: json['avatar'],
+      image: json['image'],
     );
   }
 }

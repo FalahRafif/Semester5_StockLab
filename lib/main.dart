@@ -8,7 +8,7 @@ Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   // Load .env
-  await dotenv.load();
+  await dotenv.load(fileName: ".env");
 
   runApp(const StockApp());
 }
