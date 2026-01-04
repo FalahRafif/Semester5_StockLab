@@ -145,7 +145,7 @@ class ProductRepository {
         'category_id': categoryId.toString(),
         'brand': brand,
         if (imageFile != null)
-          'files': [
+          'image': [
             await MultipartFile.fromFile(
               imageFile.path,
               filename: imageFile.path.split('/').last,

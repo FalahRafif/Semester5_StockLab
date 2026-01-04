@@ -1,7 +1,15 @@
-import 'dart:typed_data';
+import 'dart:io';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+
 import '../../../shared/core/color_manager.dart';
+import '../../../shared/wrappers/mobile_wrapper.dart';
+import '../../../shared/widgets/app_layout.dart';
+
+import '../../../../application/product_manager.dart';
+
+import '../../../../application/category_manager.dart';
+import '../../../../data/models/category_response.dart';
 
 class ProductAddPage extends StatefulWidget {
   const ProductAddPage({super.key});
@@ -12,35 +20,114 @@ class ProductAddPage extends StatefulWidget {
 
 class _ProductAddPageState extends State<ProductAddPage> {
   final nameCtrl = TextEditingController();
+  final brandCtrl = TextEditingController();
+  final CategoryManager _categoryManager = CategoryManager();
 
-  Uint8List? photoBytes;
-  String? photoName;
+  List<CategoryData> categories = [];
+  CategoryData? selectedCategory;
 
-  String? selectedCategory;
+  bool isCategoryLoading = true;
 
-  final List<String> categories = [
-    "Elektronik",
-    "Fashion",
-    "Makanan & Minuman",
-    "Kesehatan",
-    "Kosmetik",
-  ];
+  File? imageFile;
+  String? imageName;
 
-  Future<void> pickPhoto() async {
+  bool isLoading = false;
+  final ProductManager _productManager = ProductManager();
+
+  // ------------------------------------------------------------
+  // PICK IMAGE
+  // ------------------------------------------------------------
+  Future<void> pickImage() async {
     final result = await FilePicker.platform.pickFiles(
       type: FileType.image,
-      withData: true,
+      allowMultiple: false,
     );
 
-    if (result != null) {
+    if (result != null && result.files.single.path != null) {
       setState(() {
-        photoBytes = result.files.first.bytes;
-        photoName = result.files.first.name;
+        imageFile = File(result.files.single.path!);
+        imageName = result.files.single.name;
       });
     }
   }
 
+  // ------------------------------------------------------------
+  // SUBMIT
+  // ------------------------------------------------------------
+  Future<void> _submit() async {
+    setState(() => isLoading = true);
+
+    if (selectedCategory == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("Category wajib dipilih"),
+          backgroundColor: Colors.red,
+        ),
+      );
+      setState(() => isLoading = false);
+      return;
+    }
+
+    final result = await _productManager.createProduct(
+      name: nameCtrl.text.trim(),
+      brand: brandCtrl.text.trim(),
+      categoryId: selectedCategory!.id,
+      imageFile: imageFile,
+    );
+
+
+    setState(() => isLoading = false);
+    if (!mounted) return;
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(result.message),
+        backgroundColor: result.success ? Colors.green : Colors.red,
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+
+    if (result.success) {
+      await Future.delayed(const Duration(milliseconds: 700));
+      if (!mounted) return;
+
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (_) =>
+          const MobileWrapper(child: AppLayout(initialIndex: 4)),
+        ),
+      );
+    }
+  }
+
+  Future<void> _loadCategories() async {
+    final result = await _categoryManager.getCategories();
+
+    if (!mounted) return;
+
+    if (result.success) {
+      setState(() {
+        categories = result.categories;
+        isCategoryLoading = false;
+      });
+    } else {
+      isCategoryLoading = false;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(result.message)),
+      );
+    }
+  }
+
+  // ------------------------------------------------------------
+  // UI
+  // ------------------------------------------------------------
   @override
+  void initState() {
+    super.initState();
+    _loadCategories();
+  }
+
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: ColorManager.bgBottom,
@@ -51,34 +138,31 @@ class _ProductAddPageState extends State<ProductAddPage> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const SizedBox(height: 18),
-
               Text(
-                "Tambah Produk Baru",
+                "Tambah Product Baru",
                 style: TextStyle(
                   fontSize: 22,
                   fontWeight: FontWeight.w700,
                   color: ColorManager.textDark,
                 ),
               ),
-
               const SizedBox(height: 28),
 
-              _photoPicker(),
-
+              _imagePicker(),
               const SizedBox(height: 26),
-              _inputField("Nama Produk", nameCtrl),
 
+              _inputField("Product Name", nameCtrl),
               const SizedBox(height: 16),
-              _categoryDropdown(),
 
+              _inputField("Brand", brandCtrl),
+              const SizedBox(height: 16),
+
+              _categoryDropdown(),
               const SizedBox(height: 32),
-              Column(
-                children: [
-                  _buttonSave(),
-                  const SizedBox(height: 12),
-                  _buttonCancel(context),
-                ],
-              )
+
+              _buttonSave(),
+              const SizedBox(height: 12),
+              _buttonCancel(context),
             ],
           ),
         ),
@@ -86,11 +170,12 @@ class _ProductAddPageState extends State<ProductAddPage> {
     );
   }
 
-  Widget _photoPicker() {
+  Widget _imagePicker() {
     return GestureDetector(
-      onTap: pickPhoto,
+      onTap: pickImage,
       child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 18),
+        width: double.infinity,
+        padding: const EdgeInsets.all(18),
         decoration: BoxDecoration(
           color: ColorManager.inputFill,
           borderRadius: BorderRadius.circular(16),
@@ -103,24 +188,24 @@ class _ProductAddPageState extends State<ProductAddPage> {
               decoration: BoxDecoration(
                 color: Colors.grey.shade300,
                 borderRadius: BorderRadius.circular(14),
-                image: photoBytes != null
+                image: imageFile != null
                     ? DecorationImage(
-                  image: MemoryImage(photoBytes!),
+                  image: FileImage(imageFile!),
                   fit: BoxFit.cover,
                 )
                     : null,
               ),
-              child: photoBytes == null
-                  ? Icon(Icons.image, size: 32, color: Colors.grey.shade600)
+              child: imageFile == null
+                  ? Icon(Icons.inventory,
+                  size: 30, color: Colors.grey.shade600)
                   : null,
             ),
             const SizedBox(width: 16),
             Expanded(
               child: Text(
-                photoName ?? "Pilih Foto Produk",
+                imageName ?? "Pilih Foto Product",
                 style: TextStyle(
-                  fontSize: 15,
-                  color: photoBytes == null
+                  color: imageFile == null
                       ? Colors.grey.shade700
                       : ColorManager.textDark,
                 ),
@@ -133,46 +218,11 @@ class _ProductAddPageState extends State<ProductAddPage> {
     );
   }
 
-  Widget _categoryDropdown() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text("Kategori",
-            style: TextStyle(
-              color: ColorManager.textDark,
-              fontWeight: FontWeight.w600,
-            )),
-        const SizedBox(height: 6),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 14),
-          decoration: BoxDecoration(
-            color: ColorManager.inputFill,
-            borderRadius: BorderRadius.circular(14),
-          ),
-          child: DropdownButton<String>(
-            value: selectedCategory,
-            isExpanded: true,
-            underline: const SizedBox(),
-            hint: Text(
-              "Pilih Kategori",
-              style: TextStyle(color: Colors.grey.shade700),
-            ),
-            items: categories.map((c) {
-              return DropdownMenuItem(
-                value: c,
-                child: Text(c),
-              );
-            }).toList(),
-            onChanged: (val) {
-              setState(() => selectedCategory = val);
-            },
-          ),
-        )
-      ],
-    );
-  }
-
-  Widget _inputField(String label, TextEditingController ctrl) {
+  Widget _inputField(
+      String label,
+      TextEditingController ctrl, {
+        TextInputType keyboardType = TextInputType.text,
+      }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -184,6 +234,7 @@ class _ProductAddPageState extends State<ProductAddPage> {
         const SizedBox(height: 6),
         TextField(
           controller: ctrl,
+          keyboardType: keyboardType,
           decoration: InputDecoration(
             filled: true,
             fillColor: ColorManager.inputFill,
@@ -201,21 +252,26 @@ class _ProductAddPageState extends State<ProductAddPage> {
     return SizedBox(
       width: double.infinity,
       child: ElevatedButton(
-        onPressed: () {},
+        onPressed: isLoading ? null : _submit,
         style: ElevatedButton.styleFrom(
           backgroundColor: ColorManager.primary,
           padding: const EdgeInsets.symmetric(vertical: 16),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(14),
-          ),
+          shape:
+          RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
         ),
-        child: const Text(
+        child: isLoading
+            ? const SizedBox(
+          width: 22,
+          height: 22,
+          child:
+          CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+        )
+            : const Text(
           "Simpan",
           style: TextStyle(
-            color: Colors.white,
-            fontSize: 16,
-            fontWeight: FontWeight.w600,
-          ),
+              color: Colors.white,
+              fontSize: 16,
+              fontWeight: FontWeight.w600),
         ),
       ),
     );
@@ -229,19 +285,55 @@ class _ProductAddPageState extends State<ProductAddPage> {
         style: OutlinedButton.styleFrom(
           side: BorderSide(color: ColorManager.primary, width: 1.4),
           padding: const EdgeInsets.symmetric(vertical: 16),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(14),
-          ),
+          shape:
+          RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
         ),
         child: Text(
           "Batal",
           style: TextStyle(
-            color: ColorManager.primary,
-            fontSize: 16,
-            fontWeight: FontWeight.w600,
-          ),
+              color: ColorManager.primary, fontWeight: FontWeight.w600),
         ),
       ),
     );
   }
+  Widget _categoryDropdown() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          "Category",
+          style: TextStyle(
+            color: ColorManager.textDark,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        const SizedBox(height: 6),
+
+        isCategoryLoading
+            ? const Center(child: CircularProgressIndicator())
+            : DropdownButtonFormField<CategoryData>(
+          value: selectedCategory,
+          items: categories.map((c) {
+            return DropdownMenuItem<CategoryData>(
+              value: c,
+              child: Text(c.name),
+            );
+          }).toList(),
+          onChanged: (value) {
+            setState(() => selectedCategory = value);
+          },
+          decoration: InputDecoration(
+            filled: true,
+            fillColor: ColorManager.inputFill,
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(14),
+              borderSide: BorderSide.none,
+            ),
+          ),
+          hint: const Text("Pilih Category"),
+        ),
+      ],
+    );
+  }
+
 }
