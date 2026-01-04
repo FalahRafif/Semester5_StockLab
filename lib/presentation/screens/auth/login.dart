@@ -240,22 +240,22 @@ class _LoginScreenState extends State<LoginScreen> {
 
                           const SizedBox(height: 18),
 
-                          GestureDetector(
-                            onTap: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(builder: (_) => const MobileWrapper(child: RegisterScreen())),
-                              );
-                            },
-                            child: const Text(
-                              "Belum punya akun? Daftar",
-                              style: TextStyle(
-                                color: ColorManager.textPrimary,
-                                fontWeight: FontWeight.w600,
-                                fontSize: 14,
-                              ),
-                            ),
-                          ),
+                          // GestureDetector(
+                          //   onTap: () {
+                          //     Navigator.push(
+                          //       context,
+                          //       MaterialPageRoute(builder: (_) => const MobileWrapper(child: RegisterScreen())),
+                          //     );
+                          //   },
+                          //   child: const Text(
+                          //     "Belum punya akun? Daftar",
+                          //     style: TextStyle(
+                          //       color: ColorManager.textPrimary,
+                          //       fontWeight: FontWeight.w600,
+                          //       fontSize: 14,
+                          //     ),
+                          //   ),
+                          // ),
                         ],
                       ),
                     ),

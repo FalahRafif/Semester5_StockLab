@@ -254,35 +254,35 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                       const SizedBox(height: 14),
 
                       // SIGN UP
-                      SizedBox(
-                        width: double.infinity,
-                        child: OutlinedButton(
-                          onPressed: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (_) =>
-                                const MobileWrapper(child: RegisterScreen()),
-                              ),
-                            );
-                          },
-                          style: OutlinedButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(vertical: 16),
-                            side: BorderSide(color: ColorManager.primary),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(16),
-                            ),
-                          ),
-                          child: Text(
-                            "Sign Up",
-                            style: TextStyle(
-                              color: ColorManager.primary,
-                              fontSize: 16,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ),
-                      ),
+                      // SizedBox(
+                      //   width: double.infinity,
+                      //   child: OutlinedButton(
+                      //     onPressed: () {
+                      //       Navigator.push(
+                      //         context,
+                      //         MaterialPageRoute(
+                      //           builder: (_) =>
+                      //           const MobileWrapper(child: RegisterScreen()),
+                      //         ),
+                      //       );
+                      //     },
+                      //     style: OutlinedButton.styleFrom(
+                      //       padding: const EdgeInsets.symmetric(vertical: 16),
+                      //       side: BorderSide(color: ColorManager.primary),
+                      //       shape: RoundedRectangleBorder(
+                      //         borderRadius: BorderRadius.circular(16),
+                      //       ),
+                      //     ),
+                      //     child: Text(
+                      //       "Sign Up",
+                      //       style: TextStyle(
+                      //         color: ColorManager.primary,
+                      //         fontSize: 16,
+                      //         fontWeight: FontWeight.w600,
+                      //       ),
+                      //     ),
+                      //   ),
+                      // ),
                     ],
                   ],
                 ),

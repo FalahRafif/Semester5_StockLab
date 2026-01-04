@@ -32,10 +32,6 @@ class MenuBuilder {
             label: 'Kategori',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.straighten_rounded),
-            label: 'Satuan',
-          ),
-          BottomNavigationBarItem(
             icon: Icon(Icons.settings_rounded),
             label: 'Setting',
           ),
@@ -44,8 +40,20 @@ class MenuBuilder {
       default:
         return const [
           BottomNavigationBarItem(
-            icon: Icon(Icons.home_rounded),
-            label: 'Home',
+            icon: Icon(Icons.shopping_bag_rounded),
+            label: 'Produk',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.category_rounded),
+            label: 'Kategori',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.inventory_2_rounded),
+            label: 'Stok',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.settings_rounded),
+            label: 'Setting',
           ),
         ];
     }

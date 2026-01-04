@@ -90,20 +90,22 @@ class _AppLayoutState extends State<AppLayout> {
   List<Widget> _buildPages(String role) {
     if (role == "admin") {
       return [
-        const admin.HomePage(),            // 0 Dashboard
-        const ListUserPage(),              // 1 User
-        const ListProductPage(),           // 2 Stok
-        const PlaceholderPage(title: "Laporan"), // 3
-        const ListProductPage(),           // 4 Produk
-        const ListCategoryPage(), // 5
-        const PlaceholderPage(title: "Satuan"),   // 6
-        const PlaceholderPage(title: "Setting"),  // 7
+        const admin.HomePage(),                   // 0 Dashboard
+        const ListUserPage(),                     // 1 User
+        const ListProductPage(),                  // 2 Stok
+        const PlaceholderPage(title: "Laporan"),  // 3
+        const ListProductPage(),                  // 4 Produk
+        const ListCategoryPage(),                 // 5
+        const PlaceholderPage(title: "Setting"),  // 6
       ];
     }
 
     if (role == "staff") {
       return [
-        const staff.HomePage(),
+        const ListProductPage(),
+        const ListCategoryPage(),
+        const PlaceholderPage(title: "Stock"),
+        const PlaceholderPage(title: "Setting"),
       ];
     }
 
