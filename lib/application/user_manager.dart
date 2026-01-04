@@ -1,6 +1,7 @@
 import '../data/repositories/user_repository.dart';
 import '../data/models/user_response.dart';
 import 'dart:io';
+import 'category_manager.dart';
 
 class UserManager {
   final UserRepository _repo = UserRepository();
@@ -10,7 +11,11 @@ class UserManager {
   }
 
   Future<void> testing() async {
-
+    // final data = await CategoryManager().deleteCategory(id: "2");
+    // print('================');
+    // print(data.success);
+    // print(data.message);
+    // print('================');
   }
 
   Future<UserResponse> createUser({
