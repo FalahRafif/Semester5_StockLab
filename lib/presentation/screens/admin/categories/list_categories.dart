@@ -1,86 +1,103 @@
 import 'package:flutter/material.dart';
 import '../../../shared/core/color_manager.dart';
-import 'edit_user.dart';
-import 'add_user.dart';
 import '../../../shared/wrappers/mobile_wrapper.dart';
-import 'dart:math';
-import 'dart:convert';
-import 'dart:typed_data';
 import '../../../shared/widgets/app_layout.dart';
+import 'dart:math';
 
+// CATEGORY
+import '../../../../application/category_manager.dart';
+import '../../../../data/models/category_response.dart';
+import 'add_category.dart';
+import 'edit_category.dart';
 
-//user
-import '../../../../application/user_manager.dart';
-import '../../../../data/models/user_response.dart';
-
-
-class ListUserPage extends StatefulWidget {
-  const ListUserPage({super.key});
+class ListCategoryPage extends StatefulWidget {
+  const ListCategoryPage({super.key});
 
   @override
-  State<ListUserPage> createState() => _ListUserPageState();
+  State<ListCategoryPage> createState() => _ListCategoryPageState();
 }
 
-class _ListUserPageState extends State<ListUserPage>
+class _ListCategoryPageState extends State<ListCategoryPage>
     with SingleTickerProviderStateMixin {
-  // Dummy Data
-  final UserManager userManager = UserManager();
+  final CategoryManager categoryManager = CategoryManager();
 
-  List<Map<String, String?>> allUsers = [];
-
+  List<Map<String, String?>> allCategories = [];
+  List<Map<String, String?>> filteredCategories = [];
 
   bool isLoading = true;
-
-
-  bool showMenu = false;
-  late AnimationController menuController;
-  bool showFilter = false;
-
-  final TextEditingController filterEmail = TextEditingController();
-  final TextEditingController filterName = TextEditingController();
-
-  List<Map<String, String?>> filteredUsers = [];
   bool isFiltered = false;
 
   final int pageSize = 8;
   int pageIndex = 0;
 
-  List<Map<String, String?>> get paginatedUsers {
-    final source = isFiltered ? filteredUsers : allUsers;
+  bool showMenu = false;
+  bool showFilter = false;
+  late AnimationController menuController;
 
+  final TextEditingController filterName = TextEditingController();
+
+  List<Map<String, String?>> get paginatedCategories {
+    final source = isFiltered ? filteredCategories : allCategories;
     final start = pageIndex * pageSize;
-    final end = (start + pageSize) > source.length
-        ? source.length
-        : (start + pageSize);
-
+    final end = min(start + pageSize, source.length);
     return source.sublist(start, end);
   }
 
   void applyFilter() {
     final name = filterName.text.toLowerCase();
-    final email = filterEmail.text.toLowerCase();
 
     setState(() {
-      filteredUsers = allUsers.where((u) {
-        final matchName = name.isEmpty || u["name"]!.toLowerCase().contains(name);
-        final matchEmail = email.isEmpty || u["email"]!.toLowerCase().contains(email);
-        return matchName && matchEmail;
+      filteredCategories = allCategories.where((c) {
+        return name.isEmpty ||
+            c['name']!.toLowerCase().contains(name);
       }).toList();
 
       isFiltered = true;
-      pageIndex = 0; // reset ke halaman pertama
+      pageIndex = 0;
     });
   }
 
-  Future<bool> _confirmDelete(BuildContext context, String username) async {
+  Future<void> _loadCategories() async {
+    setState(() {
+      isLoading = true;
+      isFiltered = false;
+      filteredCategories.clear();
+      pageIndex = 0;
+    });
+
+    try {
+      final result = await categoryManager.getCategories();
+      if (!mounted) return;
+
+      if (result.success) {
+        setState(() {
+          allCategories = result.categories.map((c) => {
+            "id": c.id.toString(),
+            "name": c.name,
+          }).toList();
+          isLoading = false;
+        });
+      } else {
+        setState(() => isLoading = false);
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text(result.message)));
+      }
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => isLoading = false);
+      ScaffoldMessenger.of(context)
+          .showSnackBar(const SnackBar(content: Text("Gagal memuat kategori")));
+    }
+  }
+
+
+  Future<bool> _confirmDelete(BuildContext context, String name) async {
     return await showGeneralDialog<bool>(
       context: context,
       barrierDismissible: true,
       barrierLabel: "",
       transitionDuration: const Duration(milliseconds: 220),
-      pageBuilder: (_, __, ___) {
-        return const SizedBox.shrink(); // Required but not used
-      },
+      pageBuilder: (_, __, ___) => const SizedBox.shrink(),
       transitionBuilder: (context, anim1, anim2, child) {
         return Transform.scale(
           scale: 0.9 + (anim1.value * 0.1),
@@ -108,9 +125,8 @@ class _ListUserPageState extends State<ListUserPage>
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // TITLE
                     Text(
-                      "Hapus User",
+                      "Hapus Kategori",
                       style: TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.w700,
@@ -118,36 +134,26 @@ class _ListUserPageState extends State<ListUserPage>
                       ),
                     ),
                     const SizedBox(height: 10),
-
                     Text(
-                      "Apakah kamu yakin ingin menghapus user \"$username\"?",
+                      "Apakah kamu yakin ingin menghapus kategori \"$name\"?",
                       style: TextStyle(
                         color: ColorManager.textDark.withOpacity(0.75),
                         fontSize: 14.5,
                         height: 1.45,
                       ),
                     ),
-
                     const SizedBox(height: 26),
-
-                    // BUTTONS
                     Row(
                       mainAxisAlignment: MainAxisAlignment.end,
                       children: [
-                        // CANCEL
                         TextButton(
                           onPressed: () => Navigator.pop(context, false),
-                          style: TextButton.styleFrom(
-                            foregroundColor: ColorManager.textDark,
-                          ),
                           child: const Text(
                             "Batal",
                             style: TextStyle(fontWeight: FontWeight.w600),
                           ),
                         ),
                         const SizedBox(width: 6),
-
-                        // DELETE
                         ElevatedButton(
                           onPressed: () => Navigator.pop(context, true),
                           style: ElevatedButton.styleFrom(
@@ -176,65 +182,8 @@ class _ListUserPageState extends State<ListUserPage>
           ),
         );
       },
-    ) ??
-        false;
+    ) ?? false;
   }
-
-  Future<void> _loadUsers() async {
-    setState(() {
-      isLoading = true;
-      isFiltered = false;
-      filteredUsers.clear();
-      pageIndex = 0;
-    });
-
-    try {
-      final result = await userManager.getUsers();
-      await userManager.testing();
-      if (!mounted) return;
-
-      if (result.success) {
-        setState(() {
-          allUsers = result.users.map((u) => {
-            "name": u.name,
-            "email": u.email,
-            "avatar": u.avatar,
-            "phone": u.phone,
-            "id": u.id.toString(),
-          }).toList();
-
-          isLoading = false;
-        });
-      } else {
-        setState(() => isLoading = false);
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text(result.message)));
-      }
-    } catch (e) {
-      if (!mounted) return;
-      setState(() => isLoading = false);
-      ScaffoldMessenger.of(context)
-          .showSnackBar(const SnackBar(content: Text("Gagal memuat data user")));
-    }
-  }
-
-
-
-  Uint8List? decodeAvatar(String? base64) {
-    if (base64 == null || base64.isEmpty) return null;
-
-    try {
-      // Aman jika backend kirim: data:image/png;base64,...
-      final pureBase64 = base64.contains(',')
-          ? base64.split(',').last
-          : base64;
-
-      return base64Decode(pureBase64);
-    } catch (e) {
-      return null;
-    }
-  }
-
 
   @override
   void initState() {
@@ -243,8 +192,7 @@ class _ListUserPageState extends State<ListUserPage>
       vsync: this,
       duration: const Duration(milliseconds: 220),
     );
-
-    _loadUsers(); // <-- TAMBAHKAN
+    _loadCategories();
   }
 
   @override
@@ -254,56 +202,59 @@ class _ListUserPageState extends State<ListUserPage>
       body: SafeArea(
         child: Stack(
           children: [
-            // MAIN LIST
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // HEADER
                   Text(
-                    "User Management",
+                    "Category Management",
                     style: TextStyle(
                       fontSize: 26,
                       fontWeight: FontWeight.w700,
-                      letterSpacing: -0.5,
                       color: ColorManager.textDark,
                     ),
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    "Manage all registered users in the system.",
+                    "Manage all product categories.",
                     style: TextStyle(
                       fontSize: 14,
                       color: ColorManager.textDark.withOpacity(0.55),
                     ),
                   ),
-
                   const SizedBox(height: 22),
 
-                  // LIST USER
                   Expanded(
                     child: isLoading
                         ? const Center(child: CircularProgressIndicator())
                         : ListView.builder(
-                      padding: const EdgeInsets.only(bottom: 80),
-                      itemCount: paginatedUsers.length,
+                      padding:
+                      const EdgeInsets.only(bottom: 80),
+                      itemCount: paginatedCategories.length,
                       itemBuilder: (context, i) {
-                        final u = paginatedUsers[i];
-                        final avatarBytes = decodeAvatar(u["avatar"]);
+                        final c = paginatedCategories[i];
 
                         return Container(
-                          margin: const EdgeInsets.only(bottom: 14),
-                          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
+                          margin:
+                          const EdgeInsets.only(bottom: 14),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 20, vertical: 18),
                           decoration: BoxDecoration(
-                            color: ColorManager.cardBackground,
-                            borderRadius: BorderRadius.circular(16),
-                            border: Border.all(color: ColorManager.borderSoft),
+                            color:
+                            ColorManager.cardBackground,
+                            borderRadius:
+                            BorderRadius.circular(16),
+                            border: Border.all(
+                                color:
+                                ColorManager.borderSoft),
                             boxShadow: [
                               BoxShadow(
-                                color: ColorManager.shadowLightBlue,
+                                color: ColorManager
+                                    .shadowLightBlue,
                                 blurRadius: 12,
-                                offset: const Offset(0, 4),
+                                offset:
+                                const Offset(0, 4),
                               ),
                             ],
                           ),
@@ -311,59 +262,43 @@ class _ListUserPageState extends State<ListUserPage>
                             children: [
                               CircleAvatar(
                                 radius: 22,
-                                backgroundColor: ColorManager.primary.withOpacity(0.12),
-                                backgroundImage:
-                                avatarBytes != null ? MemoryImage(avatarBytes) : null,
-                                child: avatarBytes == null
-                                    ? Text(
-                                  u["name"]![0].toUpperCase(),
+                                backgroundColor:
+                                ColorManager.primary
+                                    .withOpacity(0.12),
+                                child: Text(
+                                  c['name']![0]
+                                      .toUpperCase(),
                                   style: TextStyle(
-                                    color: ColorManager.primary,
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w700,
+                                    color:
+                                    ColorManager.primary,
+                                    fontWeight:
+                                    FontWeight.w700,
                                   ),
-                                )
-                                    : null,
+                                ),
                               ),
                               const SizedBox(width: 16),
-
                               Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      u["name"]!,
-                                      style: TextStyle(
-                                        fontSize: 15.5,
-                                        fontWeight: FontWeight.w600,
-                                        color: ColorManager.textDark,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 2),
-                                    Text(
-                                      u["email"]!,
-                                      style: TextStyle(
-                                        fontSize: 13,
-                                        color: ColorManager.textDark.withOpacity(0.55),
-                                      ),
-                                    ),
-                                  ],
+                                child: Text(
+                                  c['name']!,
+                                  style: TextStyle(
+                                    fontSize: 15.5,
+                                    fontWeight:
+                                    FontWeight.w600,
+                                    color:
+                                    ColorManager.textDark,
+                                  ),
                                 ),
                               ),
                               IconButton(
-                                icon: Icon(Icons.edit_outlined,
-                                    color: ColorManager.primary, size: 22),
+                                icon: Icon(Icons.edit_outlined, color: ColorManager.primary),
                                 onPressed: () {
                                   Navigator.push(
                                     context,
                                     MaterialPageRoute(
                                       builder: (_) => MobileWrapper(
-                                        child: UserEditPage(
-                                          name: u["name"]!,
-                                          email: u["email"]!,
-                                          avatarBase64: u["avatar"]!,
-                                          phone: u['phone']!,
-                                          id: u['id'] ?? "",
+                                        child: CategoryEditPage(
+                                          id: c['id']!,
+                                          name: c['name']!,
                                         ),
                                       ),
                                     ),
@@ -374,27 +309,30 @@ class _ListUserPageState extends State<ListUserPage>
                                 icon: const Icon(
                                   Icons.delete_outline,
                                   color: Colors.redAccent,
-                                  size: 22,
                                 ),
                                 onPressed: () async {
-                                  final confirm = await _confirmDelete(context, u["name"]!);
+                                  final confirm =
+                                  await _confirmDelete(
+                                      context,
+                                      c['name']!);
                                   if (!confirm) return;
 
-                                  final userId = int.tryParse(u["id"] ?? '0') ?? 0;
-                                  if (userId == 0) return;
+                                  final id =
+                                      int.tryParse(
+                                          c['id']!) ??
+                                          0;
+                                  if (id == 0) return;
 
-                                  // simpan messenger SEBELUM async
                                   final messenger = ScaffoldMessenger.of(context);
 
                                   setState(() => isLoading = true);
 
-                                  final result = await userManager.deleteUser(userId);
-
+                                  final result = await categoryManager.deleteCategory(id: id.toString());
+                                  print(id);
                                   if (!mounted) return;
 
                                   setState(() => isLoading = false);
 
-                                  // tampilkan pesan dulu
                                   messenger.showSnackBar(
                                     SnackBar(
                                       content: Text(result.message),
@@ -407,7 +345,7 @@ class _ListUserPageState extends State<ListUserPage>
                                     // tunggu snackbar tampil
                                     await Future.delayed(const Duration(seconds: 2));
 
-                                    await _loadUsers();
+                                    await _loadCategories();
                                   }
                                 },
                               ),
@@ -418,16 +356,12 @@ class _ListUserPageState extends State<ListUserPage>
                     ),
                   ),
 
-                  const SizedBox(height: 5),
                   _paginationWindow(),
-                  const SizedBox(height: 16),
                 ],
               ),
             ),
 
-            // --------------------------------------------------------------------
             // FLOAT BUTTON (TOP RIGHT)
-            // --------------------------------------------------------------------
             Positioned(
               top: 18,
               right: 18,
@@ -435,11 +369,9 @@ class _ListUserPageState extends State<ListUserPage>
                 onTap: () {
                   setState(() {
                     showMenu = !showMenu;
-                    if (showMenu) {
-                      menuController.forward();
-                    } else {
-                      menuController.reverse();
-                    }
+                    showMenu
+                        ? menuController.forward()
+                        : menuController.reverse();
                   });
                 },
                 child: Container(
@@ -459,19 +391,13 @@ class _ListUserPageState extends State<ListUserPage>
                   child: AnimatedRotation(
                     turns: showMenu ? 0.125 : 0,
                     duration: const Duration(milliseconds: 220),
-                    child: const Icon(
-                      Icons.add_rounded,
-                      color: Colors.white,
-                      size: 30,
-                    ),
+                    child: const Icon(Icons.add_rounded, color: Colors.white, size: 30),
                   ),
                 ),
               ),
             ),
 
-            // --------------------------------------------------------------------
-            // FLOATING MENU OPTIONS (MODERN, CLEAN)
-            // --------------------------------------------------------------------
+            // FLOATING MENU OPTIONS
             Positioned(
               top: 82,
               right: 18,
@@ -484,9 +410,8 @@ class _ListUserPageState extends State<ListUserPage>
                 child: FadeTransition(
                   opacity: menuController,
                   child: Container(
-                    width: 170,
-                    padding: const EdgeInsets.symmetric(
-                        vertical: 14, horizontal: 14),
+                    width: 180,
+                    padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 14),
                     decoration: BoxDecoration(
                       color: Colors.white,
                       borderRadius: BorderRadius.circular(14),
@@ -503,7 +428,7 @@ class _ListUserPageState extends State<ListUserPage>
                       children: [
                         _menuItem(
                           icon: Icons.filter_alt_outlined,
-                          label: "Filter User",
+                          label: "Filter Category",
                           onTap: () {
                             setState(() {
                               showMenu = false;
@@ -512,17 +437,18 @@ class _ListUserPageState extends State<ListUserPage>
                             });
                           },
                         ),
-
                         const SizedBox(height: 12),
                         _menuItem(
-                          icon: Icons.person_add_alt_1,
-                          label: "Add User",
+                          icon: Icons.add_box_outlined,
+                          label: "Add Category",
                           onTap: () {
                             Navigator.push(
                               context,
                               MaterialPageRoute(
-                                  builder: (_) =>
-                                      MobileWrapper(child: UserAddPage())),
+                                builder: (_) => const MobileWrapper(
+                                  child: CategoryAddPage(),
+                                ),
+                              ),
                             );
                           },
                         ),
@@ -532,9 +458,9 @@ class _ListUserPageState extends State<ListUserPage>
                 ),
               ),
             ),
-            // ─────────────────────────────────────────────────────────────
-            // LEFT FILTER PANEL — modern clean
-            // ─────────────────────────────────────────────────────────────
+
+
+            // FILTER PANEL (LEFT)
             AnimatedPositioned(
               duration: const Duration(milliseconds: 300),
               curve: Curves.easeOut,
@@ -555,43 +481,32 @@ class _ListUserPageState extends State<ListUserPage>
                       color: Colors.black.withOpacity(0.1),
                       blurRadius: 20,
                       offset: const Offset(4, 0),
-                    )
+                    ),
                   ],
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      "Filter User",
+                      "Filter Category",
                       style: TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.w700,
                         color: ColorManager.textDark,
                       ),
                     ),
-
                     const SizedBox(height: 20),
 
-                    // Input Username
-                    Text("Username", style: TextStyle(color: ColorManager.textDark)),
+                    Text("Category Name"),
                     const SizedBox(height: 6),
                     _filterInput(controller: filterName),
 
-                    const SizedBox(height: 18),
-
-                    // Input Email
-                    Text("Email", style: TextStyle(color: ColorManager.textDark)),
-                    const SizedBox(height: 6),
-                    _filterInput(controller: filterEmail),
-
                     const SizedBox(height: 28),
 
-                    // BUTTON CARI
                     SizedBox(
                       width: double.infinity,
                       child: ElevatedButton(
                         onPressed: () {
-                          // TEMPORARY: hanya tutup panel
                           applyFilter();
                           setState(() => showFilter = false);
                         },
@@ -602,172 +517,83 @@ class _ListUserPageState extends State<ListUserPage>
                             borderRadius: BorderRadius.circular(12),
                           ),
                         ),
-                        child: const Text("Cari",
-                            style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
+                        child: const Text(
+                          "Cari",
+                          style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
+                        ),
                       ),
                     ),
 
                     const SizedBox(height: 12),
 
-                    // BUTTON TUTUP
                     SizedBox(
                       width: double.infinity,
                       child: OutlinedButton(
                         onPressed: () => setState(() => showFilter = false),
-                        style: OutlinedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: 14),
-                          side: BorderSide(color: ColorManager.border),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                        ),
-                        child: Text("Tutup",
-                            style: TextStyle(color: ColorManager.textDark)),
+                        child: const Text("Tutup"),
                       ),
                     ),
+
                     SizedBox(
                       width: double.infinity,
                       child: OutlinedButton(
                         onPressed: () {
                           setState(() {
                             filterName.clear();
-                            filterEmail.clear();
                             isFiltered = false;
-                            filteredUsers.clear();
+                            filteredCategories.clear();
                             pageIndex = 0;
                           });
                         },
-                        style: OutlinedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: 14),
-                          side: BorderSide(color: ColorManager.border),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                        ),
-                        child: Text("Reset Filter",
-                            style: TextStyle(color: ColorManager.textDark)),
+                        child: const Text("Reset Filter"),
                       ),
                     ),
-
                   ],
                 ),
               ),
             ),
-
-
-
           ],
         ),
       ),
     );
   }
 
-  // Small menu item widget
-  Widget _menuItem(
-      {required IconData icon,
-        required String label,
-        required Function() onTap}) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Row(
-        children: [
-          Icon(icon, size: 20, color: ColorManager.textDark),
-          const SizedBox(width: 10),
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: 14.5,
-              fontWeight: FontWeight.w600,
-              color: ColorManager.textDark,
-            ),
-          )
-        ],
-      ),
-    );
-  }
-
-  // ----------------------------------------------------------------
-  // Modern Pagination — Windowed Style
-  // ----------------------------------------------------------------
   Widget _paginationWindow() {
-    final source = isFiltered ? filteredUsers : allUsers;
+    final source =
+    isFiltered ? filteredCategories : allCategories;
+    if (source.isEmpty) return const SizedBox();
 
-    if (source.isEmpty) return const SizedBox(); // safeguard jika list kosong
-
-    final totalPages = ((source.length - 1) / pageSize).floor() + 1;
-
-    // FIX: Jika hanya ada 1 halaman, langsung return 1 saja
-    if (totalPages == 1) {
-      return Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-            decoration: BoxDecoration(
-              color: ColorManager.primary,
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: const Text(
-              "1",
-              style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-            ),
-          ),
-        ],
-      );
-    }
-
-    // Safety: pastikan pageIndex tidak out of range
-    if (pageIndex >= totalPages) {
-      pageIndex = totalPages - 1;
-    }
-    if (pageIndex < 0) pageIndex = 0;
-
-    List<int> visible = [];
-
-    visible.add(0);
-
-    final start = max(1, pageIndex - 1);
-    final end = min(totalPages - 2, pageIndex + 1);
-
-    for (int i = start; i <= end; i++) {
-      visible.add(i);
-    }
-
-    visible.add(totalPages - 1);
-    visible = visible.toSet().toList()..sort();
+    final totalPages =
+        ((source.length - 1) / pageSize).floor() + 1;
 
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
-      children: visible.map((i) {
+      children: List.generate(totalPages, (i) {
         final active = pageIndex == i;
-
         return GestureDetector(
           onTap: () => setState(() => pageIndex = i),
           child: Container(
             margin: const EdgeInsets.symmetric(horizontal: 4),
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+            padding: const EdgeInsets.symmetric(
+                horizontal: 14, vertical: 8),
             decoration: BoxDecoration(
-              color: active ? ColorManager.primary : Colors.white,
+              color: active
+                  ? ColorManager.primary
+                  : Colors.white,
               borderRadius: BorderRadius.circular(10),
-              border: Border.all(
-                color:
-                active ? ColorManager.primary : ColorManager.borderSoft,
-              ),
             ),
             child: Text(
-              "${i + 1}",
+              '${i + 1}',
               style: TextStyle(
-                color: active ? Colors.white : ColorManager.textDark,
-                fontWeight: FontWeight.w600,
+                color:
+                active ? Colors.white : Colors.black,
               ),
             ),
           ),
         );
-      }).toList(),
+      }),
     );
   }
-
-
 
   Widget _filterInput({required TextEditingController controller}) {
     return Container(
@@ -786,4 +612,30 @@ class _ListUserPageState extends State<ListUserPage>
     );
   }
 
+  Widget _menuItem({
+    required IconData icon,
+    required String label,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Row(
+        children: [
+          Icon(icon, size: 20, color: ColorManager.textDark),
+          const SizedBox(width: 10),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 14.5,
+              fontWeight: FontWeight.w600,
+              color: ColorManager.textDark,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+
 }
+

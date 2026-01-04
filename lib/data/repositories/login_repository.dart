@@ -14,7 +14,7 @@ class LoginRepository {
   }
 
   Future<LoginResponse> login(String email, String password) async {
-    final endpoint = '/stocklab-api/v1/login';
+    final endpoint = '/v1/login';
     print("Calling: $baseUrl$endpoint");
 
     try {

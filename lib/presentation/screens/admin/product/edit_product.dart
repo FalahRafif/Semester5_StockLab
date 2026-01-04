@@ -1,18 +1,32 @@
+import 'dart:convert';
+import 'dart:io';
 import 'dart:typed_data';
+
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+
 import '../../../shared/core/color_manager.dart';
+import '../../../shared/wrappers/mobile_wrapper.dart';
+import '../../../shared/widgets/app_layout.dart';
+
+import '../../../../application/product_manager.dart';
+import '../../../../application/category_manager.dart';
+import '../../../../data/models/category_response.dart';
 
 class ProductEditPage extends StatefulWidget {
-  final String productName;
-  final String category;
-  final String? productImageUrl; // opsional jika ingin tampilkan foto awal
+  final int id;
+  final String name;
+  final String brand;
+  final int categoryId;
+  final String? avatarBase64;
 
   const ProductEditPage({
     super.key,
-    required this.productName,
-    required this.category,
-    this.productImageUrl,
+    required this.id,
+    required this.name,
+    required this.brand,
+    required this.categoryId,
+    this.avatarBase64,
   });
 
   @override
@@ -21,42 +35,139 @@ class ProductEditPage extends StatefulWidget {
 
 class _ProductEditPageState extends State<ProductEditPage> {
   late TextEditingController nameCtrl;
+  late TextEditingController brandCtrl;
 
-  Uint8List? photoBytes;
-  String? photoName;
+  final ProductManager _productManager = ProductManager();
+  final CategoryManager _categoryManager = CategoryManager();
 
-  String? selectedCategory;
+  List<CategoryData> categories = [];
+  CategoryData? selectedCategory;
+  bool isCategoryLoading = true;
 
-  final List<String> categories = [
-    "Elektronik",
-    "Fashion",
-    "Makanan & Minuman",
-    "Kesehatan",
-    "Kosmetik",
-  ];
+  Uint8List? imageBytes;
+  File? imageFile;
+  String? imageName;
 
+  bool isLoading = false;
+
+  // ------------------------------------------------------------
+  // INIT
+  // ------------------------------------------------------------
   @override
   void initState() {
-    nameCtrl = TextEditingController(text: widget.productName);
-    selectedCategory = widget.category;
     super.initState();
+
+    nameCtrl = TextEditingController(text: widget.name);
+    brandCtrl = TextEditingController(text: widget.brand);
+
+    if (widget.avatarBase64 != null && widget.avatarBase64!.isNotEmpty) {
+      try {
+        imageBytes =
+            Uint8List.fromList(base64Decode(widget.avatarBase64!));
+      } catch (_) {}
+    }
+
+    _loadCategories();
   }
 
-  Future<void> pickPhoto() async {
+  // ------------------------------------------------------------
+  // LOAD CATEGORIES
+  // ------------------------------------------------------------
+  Future<void> _loadCategories() async {
+    final result = await _categoryManager.getCategories();
+
+    if (!mounted) return;
+
+    if (result.success) {
+      final foundCategory = result.categories.firstWhere(
+            (c) => c.id == widget.categoryId,
+        orElse: () => result.categories.first,
+      );
+
+      setState(() {
+        categories = result.categories;
+        selectedCategory = foundCategory;
+        isCategoryLoading = false;
+      });
+    } else {
+      isCategoryLoading = false;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(result.message)),
+      );
+    }
+  }
+
+  // ------------------------------------------------------------
+  // PICK IMAGE
+  // ------------------------------------------------------------
+  Future<void> pickImage() async {
     final result = await FilePicker.platform.pickFiles(
       type: FileType.image,
       allowMultiple: false,
       withData: true,
     );
 
-    if (result != null) {
+    if (result != null && result.files.single.path != null) {
       setState(() {
-        photoBytes = result.files.first.bytes;
-        photoName = result.files.first.name;
+        imageFile = File(result.files.single.path!);
+        imageBytes = result.files.single.bytes;
+        imageName = result.files.single.name;
       });
     }
   }
 
+  // ------------------------------------------------------------
+  // SUBMIT UPDATE
+  // ------------------------------------------------------------
+  Future<void> _submitUpdate() async {
+    if (selectedCategory == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("Category wajib dipilih"),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    setState(() => isLoading = true);
+
+    final result = await _productManager.updateProduct(
+      id: widget.id,
+      name: nameCtrl.text.trim(),
+      brand: brandCtrl.text.trim(),
+      categoryId: selectedCategory!.id,
+      imageFile: imageFile,
+    );
+
+    setState(() => isLoading = false);
+    if (!mounted) return;
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(result.message),
+        backgroundColor: result.success ? Colors.green : Colors.red,
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+
+    if (result.success) {
+      await Future.delayed(const Duration(milliseconds: 700));
+      if (!mounted) return;
+
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (_) =>
+          const MobileWrapper(child: AppLayout(initialIndex: 4)),
+        ),
+      );
+    }
+  }
+
+  // ------------------------------------------------------------
+  // UI
+  // ------------------------------------------------------------
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -68,37 +179,31 @@ class _ProductEditPageState extends State<ProductEditPage> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const SizedBox(height: 18),
-
               Text(
-                "Edit Produk",
+                "Edit Product",
                 style: TextStyle(
                   fontSize: 22,
                   fontWeight: FontWeight.w700,
                   color: ColorManager.textDark,
                 ),
               ),
-
               const SizedBox(height: 28),
 
-              _photoPicker(),
-
+              _imagePicker(),
               const SizedBox(height: 26),
 
-              _inputField("Nama Produk", nameCtrl),
+              _inputField("Product Name", nameCtrl),
+              const SizedBox(height: 16),
 
+              _inputField("Brand", brandCtrl),
               const SizedBox(height: 16),
 
               _categoryDropdown(),
-
               const SizedBox(height: 32),
 
-              Column(
-                children: [
-                  _buttonUpdate(),
-                  const SizedBox(height: 12),
-                  _buttonCancel(context),
-                ],
-              ),
+              _buttonUpdate(),
+              const SizedBox(height: 12),
+              _buttonCancel(context),
             ],
           ),
         ),
@@ -106,15 +211,15 @@ class _ProductEditPageState extends State<ProductEditPage> {
     );
   }
 
-  // =============================================================
-  // FOTO PRODUK — IDENTIK DENGAN USER EDIT
-  // =============================================================
-  Widget _photoPicker() {
+  // ------------------------------------------------------------
+  // WIDGETS
+  // ------------------------------------------------------------
+  Widget _imagePicker() {
     return GestureDetector(
-      onTap: pickPhoto,
+      onTap: pickImage,
       child: Container(
         width: double.infinity,
-        padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 18),
+        padding: const EdgeInsets.all(18),
         decoration: BoxDecoration(
           color: ColorManager.inputFill,
           borderRadius: BorderRadius.circular(16),
@@ -127,37 +232,29 @@ class _ProductEditPageState extends State<ProductEditPage> {
               decoration: BoxDecoration(
                 color: Colors.grey.shade300,
                 borderRadius: BorderRadius.circular(14),
-                image: photoBytes != null
+                image: imageBytes != null
                     ? DecorationImage(
-                  image: MemoryImage(photoBytes!),
+                  image: MemoryImage(imageBytes!),
                   fit: BoxFit.cover,
                 )
-                    : (widget.productImageUrl != null
-                    ? DecorationImage(
-                  image: NetworkImage(widget.productImageUrl!),
-                  fit: BoxFit.cover,
-                )
-                    : null),
+                    : null,
               ),
-              child: (photoBytes == null && widget.productImageUrl == null)
-                  ? Icon(Icons.image, size: 32, color: Colors.grey.shade600)
+              child: imageBytes == null
+                  ? Icon(Icons.inventory,
+                  size: 30, color: Colors.grey.shade600)
                   : null,
             ),
-
             const SizedBox(width: 16),
-
             Expanded(
               child: Text(
-                photoName ?? "Pilih Foto Produk",
+                imageName ?? "Pilih Foto Product",
                 style: TextStyle(
-                  color: photoBytes == null
+                  color: imageBytes == null
                       ? Colors.grey.shade700
                       : ColorManager.textDark,
-                  fontSize: 15,
                 ),
               ),
             ),
-
             Icon(Icons.upload_file, color: ColorManager.primary),
           ],
         ),
@@ -165,23 +262,23 @@ class _ProductEditPageState extends State<ProductEditPage> {
     );
   }
 
-  // =============================================================
-  // INPUT FIELD — IDENTIK DENGAN USER EDIT
-  // =============================================================
-  Widget _inputField(String label, TextEditingController ctrl) {
+  Widget _inputField(
+      String label,
+      TextEditingController ctrl, {
+        TextInputType keyboardType = TextInputType.text,
+      }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          label,
-          style: TextStyle(
-            color: ColorManager.textDark,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
+        Text(label,
+            style: TextStyle(
+              color: ColorManager.textDark,
+              fontWeight: FontWeight.w600,
+            )),
         const SizedBox(height: 6),
         TextField(
           controller: ctrl,
+          keyboardType: keyboardType,
           decoration: InputDecoration(
             filled: true,
             fillColor: ColorManager.inputFill,
@@ -195,69 +292,70 @@ class _ProductEditPageState extends State<ProductEditPage> {
     );
   }
 
-  // =============================================================
-  // DROPDOWN KATEGORI
-  // =============================================================
   Widget _categoryDropdown() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text("Kategori",
-            style: TextStyle(
-              color: ColorManager.textDark,
-              fontWeight: FontWeight.w600,
-            )),
+        Text(
+          "Category",
+          style: TextStyle(
+            color: ColorManager.textDark,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
         const SizedBox(height: 6),
 
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 14),
-          decoration: BoxDecoration(
-            color: ColorManager.inputFill,
-            borderRadius: BorderRadius.circular(14),
+        isCategoryLoading
+            ? const Center(child: CircularProgressIndicator())
+            : DropdownButtonFormField<CategoryData>(
+          value: selectedCategory,
+          items: categories.map((c) {
+            return DropdownMenuItem<CategoryData>(
+              value: c,
+              child: Text(c.name),
+            );
+          }).toList(),
+          onChanged: (value) {
+            setState(() => selectedCategory = value);
+          },
+          decoration: InputDecoration(
+            filled: true,
+            fillColor: ColorManager.inputFill,
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(14),
+              borderSide: BorderSide.none,
+            ),
           ),
-          child: DropdownButton<String>(
-            value: selectedCategory,
-            isExpanded: true,
-            underline: const SizedBox(),
-            hint: Text("Pilih Kategori",
-                style: TextStyle(color: Colors.grey.shade700)),
-            items: categories.map((c) {
-              return DropdownMenuItem(
-                value: c,
-                child: Text(c),
-              );
-            }).toList(),
-            onChanged: (val) {
-              setState(() => selectedCategory = val);
-            },
-          ),
+          hint: const Text("Pilih Category"),
         ),
       ],
     );
   }
 
-  // =============================================================
-  // BUTTON UPDATE — IDENTIK DENGAN USER UPDATE
-  // =============================================================
   Widget _buttonUpdate() {
     return SizedBox(
       width: double.infinity,
       child: ElevatedButton(
-        onPressed: () {},
+        onPressed: isLoading ? null : _submitUpdate,
         style: ElevatedButton.styleFrom(
           backgroundColor: ColorManager.primary,
           padding: const EdgeInsets.symmetric(vertical: 16),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(14),
-          ),
+          shape:
+          RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
         ),
-        child: const Text(
-          "Update Produk",
+        child: isLoading
+            ? const SizedBox(
+          width: 22,
+          height: 22,
+          child: CircularProgressIndicator(
+              strokeWidth: 2, color: Colors.white),
+        )
+            : const Text(
+          "Update Product",
           style: TextStyle(
-            color: Colors.white,
-            fontSize: 16,
-            fontWeight: FontWeight.w600,
-          ),
+              color: Colors.white,
+              fontSize: 16,
+              fontWeight: FontWeight.w600),
         ),
       ),
     );
@@ -271,17 +369,13 @@ class _ProductEditPageState extends State<ProductEditPage> {
         style: OutlinedButton.styleFrom(
           side: BorderSide(color: ColorManager.primary, width: 1.4),
           padding: const EdgeInsets.symmetric(vertical: 16),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(14),
-          ),
+          shape:
+          RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
         ),
         child: Text(
           "Batal",
           style: TextStyle(
-            color: ColorManager.primary,
-            fontSize: 16,
-            fontWeight: FontWeight.w600,
-          ),
+              color: ColorManager.primary, fontWeight: FontWeight.w600),
         ),
       ),
     );

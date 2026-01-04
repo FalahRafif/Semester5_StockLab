@@ -2,6 +2,12 @@ import 'dart:typed_data';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import '../../../shared/core/color_manager.dart';
+import '../../../shared/wrappers/mobile_wrapper.dart';
+import '../../../shared/widgets/app_layout.dart';
+//user
+import 'dart:io';
+import '../../../../application/user_manager.dart';
+
 
 class UserAddPage extends StatefulWidget {
   const UserAddPage({super.key});
@@ -15,23 +21,36 @@ class _UserAddPageState extends State<UserAddPage> {
   final emailCtrl = TextEditingController();
   final passCtrl = TextEditingController();
   final phoneCtrl = TextEditingController();
+  final UserManager _userManager = UserManager();
+  bool _isLoading = false;
 
-  Uint8List? profileBytes;
   String? profileName;
+  File? avatarFile;
 
   Future<void> pickProfile() async {
     final result = await FilePicker.platform.pickFiles(
       type: FileType.image,
       allowMultiple: false,
-      withData: true,
     );
 
-    if (result != null) {
+    if (result != null && result.files.single.path != null) {
       setState(() {
-        profileBytes = result.files.first.bytes;
-        profileName = result.files.first.name;
+        avatarFile = File(result.files.single.path!);
+        profileName = result.files.single.name;
       });
     }
+  }
+
+
+
+  void _showSnack(String message, {bool success = false}) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: success ? Colors.green : Colors.red,
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
   }
 
   @override
@@ -135,14 +154,14 @@ class _UserAddPageState extends State<UserAddPage> {
               decoration: BoxDecoration(
                 color: Colors.grey.shade300,
                 borderRadius: BorderRadius.circular(14),
-                image: profileBytes != null
+                image: avatarFile != null
                     ? DecorationImage(
-                  image: MemoryImage(profileBytes!),
+                  image: FileImage(avatarFile!),
                   fit: BoxFit.cover,
                 )
                     : null,
               ),
-              child: profileBytes == null
+              child: avatarFile == null
                   ? Icon(Icons.person, size: 32, color: Colors.grey.shade600)
                   : null,
             ),
@@ -151,7 +170,7 @@ class _UserAddPageState extends State<UserAddPage> {
               child: Text(
                 profileName ?? "Pilih Foto Profile",
                 style: TextStyle(
-                  color: profileBytes == null
+                  color: avatarFile == null
                       ? Colors.grey.shade700
                       : ColorManager.textDark,
                   fontSize: 15,
@@ -199,7 +218,7 @@ class _UserAddPageState extends State<UserAddPage> {
     return SizedBox(
       width: double.infinity,
       child: ElevatedButton(
-        onPressed: () {},
+        onPressed: _isLoading ? null : _submit,
         style: ElevatedButton.styleFrom(
           backgroundColor: ColorManager.primary,
           padding: const EdgeInsets.symmetric(vertical: 16),
@@ -207,7 +226,16 @@ class _UserAddPageState extends State<UserAddPage> {
             borderRadius: BorderRadius.circular(14),
           ),
         ),
-        child: const Text(
+        child: _isLoading
+            ? const SizedBox(
+          height: 22,
+          width: 22,
+          child: CircularProgressIndicator(
+            strokeWidth: 2,
+            color: Colors.white,
+          ),
+        )
+            : const Text(
           "Simpan",
           style: TextStyle(
             color: Colors.white,
@@ -218,4 +246,37 @@ class _UserAddPageState extends State<UserAddPage> {
       ),
     );
   }
+
+  Future<void> _submit() async {
+    setState(() => _isLoading = true);
+
+    final result = await _userManager.createUser(
+      email: emailCtrl.text.trim(),
+      password: passCtrl.text.trim(),
+      name: nameCtrl.text.trim(),
+      phone: phoneCtrl.text.trim(),
+      avatarFile: avatarFile,
+    );
+
+    setState(() => _isLoading = false);
+
+    if (!mounted) return;
+
+    if (result.success) {
+      _showSnack("User berhasil ditambahkan", success: true);
+
+      // delay dikit biar snack kelihatan
+      Future.delayed(const Duration(milliseconds: 700), () {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (_) => const MobileWrapper(child: AppLayout(initialIndex: 1,)),
+          ),
+        );
+      });
+    } else {
+      _showSnack(result.message);
+    }
+  }
+
 }
