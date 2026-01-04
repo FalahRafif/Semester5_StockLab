@@ -68,6 +68,7 @@ class _ListProductPageState extends State<ListProductPage>
           "brand": p.brand,
           "categoryId": p.category,
           "avatar": p.image,
+          "price": p.price.toString()
         }).toList();
         isLoading = false;
       });
@@ -380,6 +381,7 @@ class _ListProductPageState extends State<ListProductPage>
                       brand: p["brand"]!,
                       categoryId: int.parse(p["categoryId"]!),
                       avatarBase64: p["avatar"],
+                      price: int.parse(p["price"]!),
                     ),
                   ),
                 ),
