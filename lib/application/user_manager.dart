@@ -1,7 +1,7 @@
 import '../data/repositories/user_repository.dart';
 import '../data/models/user_response.dart';
 import 'dart:io';
-import 'category_manager.dart';
+import 'product_manager.dart';
 
 class UserManager {
   final UserRepository _repo = UserRepository();
@@ -11,10 +11,15 @@ class UserManager {
   }
 
   Future<void> testing() async {
-    // final data = await CategoryManager().deleteCategory(id: "2");
+    // final filePath =
+    //     r'C:/Users/frthe/Downloads/1a167098-0659-43e9-ba96-1dad8fae9cac (2) (1).png';
+    //
+    // final imageFile = File(filePath);
+    //
+    // final result = await ProductManager().deleteProduct(2);
     // print('================');
-    // print(data.success);
-    // print(data.message);
+    // print(result.success);
+    // print(result.message);
     // print('================');
   }
 
