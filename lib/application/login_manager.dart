@@ -21,7 +21,7 @@ class LoginManager {
     if (result.success && result.token != null && result.role != null) {
       await TokenService.saveAuth(
         token: result.token!,
-        userId: result.userId!,
+        userId: result.userId!.toString(),
         role: result.role!,
         expiresInSeconds: 86400, // 24 jam
       );
