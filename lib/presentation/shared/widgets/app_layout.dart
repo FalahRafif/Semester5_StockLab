@@ -16,6 +16,8 @@ import '../../screens/admin/report/list_report.dart';
 
 import '../../screens/staff/stock/list_stock.dart';
 
+import '../../screens/settings/list_setting.dart';
+
 class AppLayout extends StatefulWidget {
   /// ⬅️ TAMBAHAN: index awal menu
   final int initialIndex;
@@ -99,16 +101,17 @@ class _AppLayoutState extends State<AppLayout> {
         const ReportPage(),  // 3
         const ListProductPage(),                  // 4 Produk
         const ListCategoryPage(),                 // 5
-        const PlaceholderPage(title: "Setting"),  // 6
+        const SettingsPage(),  // 6
       ];
     }
 
     if (role == "staff") {
       return [
+        const staff.HomeStaffPage(),
         const ListProductPage(),
         const ListCategoryPage(),
         const ListStockPage(),
-        const PlaceholderPage(title: "Setting"),
+        const SettingsPage(),
       ];
     }
 
@@ -145,7 +148,7 @@ class _AppLayoutState extends State<AppLayout> {
 
     return Scaffold(
       appBar: AppTopBar(
-        title: "Selamat Datang ${role.toUpperCase()}",
+        title: "StockLab - ${role.toUpperCase()}",
         onSettingsTap: () {},
         onLogoutTap: () async {
           await TokenService.clear();
