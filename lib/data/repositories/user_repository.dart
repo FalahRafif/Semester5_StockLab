@@ -217,5 +217,48 @@ class UserRepository {
     }
   }
 
+  Future<UserResponse> getUserDetail(int id) async {
+    final endpoint = '/v1/users/detail/$id';
+    print("Calling: $baseUrl$endpoint");
+
+    try {
+      final token = await TokenService.getToken();
+
+      if (token == null) {
+        return UserResponse(
+          success: false,
+          message: 'Token tidak valid atau sudah expired',
+          users: [],
+        );
+      }
+
+      final response = await _dio.get(
+        endpoint,
+        options: Options(
+          headers: {
+            'Authorization': 'Bearer $token',
+          },
+        ),
+      );
+
+      print("Status: ${response.statusCode}");
+      print("Body: ${response.data}");
+
+      final raw = response.data['data'];
+
+      return UserResponse(
+        success: response.data['status'] == 'success',
+        message: response.data['message'] ?? '',
+        users: raw != null ? [UserData.fromJson(raw)] : [],
+      );
+    } catch (e) {
+      print("Error: $e");
+      return UserResponse(
+        success: false,
+        message: 'Gagal mengambil detail user',
+        users: [],
+      );
+    }
+  }
 
 }
