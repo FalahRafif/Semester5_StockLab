@@ -57,14 +57,6 @@ class AppTopBar extends StatelessWidget implements PreferredSizeWidget {
               // ICONS
               Row(
                 children: [
-                  // Settings
-                  _TopBarIcon(
-                    icon: Icons.settings,
-                    onTap: onSettingsTap,
-                  ),
-
-                  const SizedBox(width: 12),
-
                   // Logout
                   _TopBarIcon(
                     icon: Icons.logout,

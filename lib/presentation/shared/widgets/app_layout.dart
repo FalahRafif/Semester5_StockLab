@@ -144,7 +144,7 @@ class _AppLayoutState extends State<AppLayout> {
 
     return Scaffold(
       appBar: AppTopBar(
-        title: "${role.toUpperCase()} Dashboard",
+        title: "Selamat Datang ${role.toUpperCase()}",
         onSettingsTap: () {},
         onLogoutTap: () async {
           await TokenService.clear();

@@ -251,7 +251,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                         ),
                       ),
 
-                      const SizedBox(height: 14),
+                      // const SizedBox(height: 14),
 
                       // SIGN UP
                       // SizedBox(
