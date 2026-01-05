@@ -34,15 +34,15 @@ class TransactionRepository {
 
       final response = await _dio.get(
         endpoint,
+        queryParameters: {
+          if (startDate != null) 'start_date': startDate,
+          if (endDate != null) 'end_date': endDate,
+        },
         options: Options(
           headers: {
             'Authorization': 'Bearer $token',
           },
         ),
-        data: {
-          if (startDate != null) 'start_date': startDate,
-          if (endDate != null) 'end_date': endDate,
-        },
       );
 
       print("Status: ${response.statusCode}");
@@ -58,6 +58,7 @@ class TransactionRepository {
       );
     }
   }
+
 
   Future<TransactionResponse> createTransaction({
     required int productId,

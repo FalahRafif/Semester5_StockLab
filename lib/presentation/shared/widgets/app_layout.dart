@@ -12,6 +12,7 @@ import '../../screens/auth/login.dart';
 import '../../screens/admin/user/list_user.dart';
 import '../../screens/admin/product/list_product.dart';
 import '../../screens/admin/categories/list_categories.dart';
+import '../../screens/admin/report/list_report.dart';
 
 import '../../screens/staff/stock/list_stock.dart';
 
@@ -95,7 +96,7 @@ class _AppLayoutState extends State<AppLayout> {
         const admin.HomePage(),                   // 0 Dashboard
         const ListUserPage(),                     // 1 User
         const ListStockPage(),                  // 2 Stok
-        const PlaceholderPage(title: "Laporan"),  // 3
+        const ReportPage(),  // 3
         const ListProductPage(),                  // 4 Produk
         const ListCategoryPage(),                 // 5
         const PlaceholderPage(title: "Setting"),  // 6
