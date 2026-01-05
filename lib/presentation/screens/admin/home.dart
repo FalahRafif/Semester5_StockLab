@@ -36,14 +36,6 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
             _title("Aktivitas Stok 7 Hari Terakhir"),
             const SizedBox(height: 12),
             _modernStockChart(),
-
-            const SizedBox(height: 28),
-            _title("Data Produk"),
-            const SizedBox(height: 12),
-
-            _tabHeader(),
-            const SizedBox(height: 14),
-            _tabContent(),
           ],
         ),
       ),
