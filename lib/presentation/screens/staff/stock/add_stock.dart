@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../../../shared/core/color_manager.dart';
 import '../../../shared/wrappers/mobile_wrapper.dart';
@@ -28,7 +29,7 @@ class _AddStockPageState extends State<AddStockPage> {
   List<ProductData> filteredProducts = [];
   ProductData? selectedProduct;
 
-  String moveType = "IN";
+  String? moveType; // ❗ nullable agar bisa divalidasi
 
   bool _isLoading = false;
   bool _loadingProduct = true;
@@ -109,6 +110,7 @@ class _AddStockPageState extends State<AddStockPage> {
                 "Quantity",
                 quantityCtrl,
                 keyboardType: TextInputType.number,
+                onlyNumber: true,
               ),
 
               const SizedBox(height: 24),
@@ -307,6 +309,7 @@ class _AddStockPageState extends State<AddStockPage> {
       String label,
       TextEditingController ctrl, {
         TextInputType keyboardType = TextInputType.text,
+        bool onlyNumber = false,
       }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -322,6 +325,8 @@ class _AddStockPageState extends State<AddStockPage> {
         TextField(
           controller: ctrl,
           keyboardType: keyboardType,
+          inputFormatters:
+          onlyNumber ? [FilteringTextInputFormatter.digitsOnly] : null,
           decoration: InputDecoration(
             filled: true,
             fillColor: ColorManager.inputFill,
@@ -372,14 +377,24 @@ class _AddStockPageState extends State<AddStockPage> {
   // ─────────────────────────────────────────────
 
   Future<void> _submit() async {
-    if (selectedProduct == null || quantityCtrl.text.isEmpty) {
-      _showSnack("Product dan quantity wajib diisi");
+    if (selectedProduct == null) {
+      _showSnack("Product wajib dipilih");
       return;
     }
 
-    final qty = int.tryParse(quantityCtrl.text);
+    if (quantityCtrl.text.trim().isEmpty) {
+      _showSnack("Quantity wajib diisi");
+      return;
+    }
+
+    final qty = int.tryParse(quantityCtrl.text.trim());
     if (qty == null || qty <= 0) {
-      _showSnack("Quantity tidak valid");
+      _showSnack("Quantity harus berupa angka dan lebih dari 0");
+      return;
+    }
+
+    if (moveType == null) {
+      _showSnack("Jenis transaksi wajib dipilih");
       return;
     }
 
@@ -388,7 +403,7 @@ class _AddStockPageState extends State<AddStockPage> {
     final result = await _transactionManager.createTransaction(
       productId: selectedProduct!.id,
       quantity: qty,
-      moveType: moveType,
+      moveType: moveType!,
     );
 
     setState(() => _isLoading = false);

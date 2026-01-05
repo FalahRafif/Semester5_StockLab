@@ -4,12 +4,12 @@ import 'dart:typed_data';
 
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../../../shared/core/color_manager.dart';
 import '../../../shared/wrappers/mobile_wrapper.dart';
 import '../../../shared/widgets/app_layout.dart';
 
-import '../../../../data/repositories/user_repository.dart';
 import '../../../../application/user_manager.dart';
 
 class UserEditPage extends StatefulWidget {
@@ -43,9 +43,11 @@ class _UserEditPageState extends State<UserEditPage> {
   File? profileFile;
 
   bool isLoading = false;
-
   late UserManager _userManager;
 
+  // ─────────────────────────────────────────────
+  // INIT
+  // ─────────────────────────────────────────────
   @override
   void initState() {
     super.initState();
@@ -64,9 +66,9 @@ class _UserEditPageState extends State<UserEditPage> {
     }
   }
 
-  // =============================================================
+  // ─────────────────────────────────────────────
   // PICK PROFILE
-  // =============================================================
+  // ─────────────────────────────────────────────
   Future<void> pickProfile() async {
     final result = await FilePicker.platform.pickFiles(
       type: FileType.image,
@@ -74,7 +76,7 @@ class _UserEditPageState extends State<UserEditPage> {
       withData: true,
     );
 
-    if (result != null) {
+    if (result != null && result.files.single.path != null) {
       setState(() {
         profileFile = File(result.files.single.path!);
         profileBytes = result.files.single.bytes;
@@ -83,16 +85,90 @@ class _UserEditPageState extends State<UserEditPage> {
     }
   }
 
-  // =============================================================
-  // SUBMIT UPDATE (FIXED FLOW)
-  // =============================================================
+  // ─────────────────────────────────────────────
+  // SNACK
+  // ─────────────────────────────────────────────
+  void _showSnack(String msg, {bool success = false}) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(msg),
+        backgroundColor:
+        success ? ColorManager.success : ColorManager.danger,
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
+
+  // ─────────────────────────────────────────────
+  // VALIDATION (PASSWORD OPSIONAL)
+  // ─────────────────────────────────────────────
+  bool _validate() {
+    if (nameCtrl.text.trim().isEmpty) {
+      _showSnack("Nama tidak boleh kosong");
+      return false;
+    }
+
+    if (emailCtrl.text.trim().isEmpty) {
+      _showSnack("Email tidak boleh kosong");
+      return false;
+    }
+
+    final emailRegex =
+    RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
+    if (!emailRegex.hasMatch(emailCtrl.text.trim())) {
+      _showSnack("Format email tidak valid");
+      return false;
+    }
+
+    // ✅ PASSWORD OPSIONAL
+    if (passCtrl.text.isNotEmpty && passCtrl.text.length < 6) {
+      _showSnack("Password minimal 6 karakter");
+      return false;
+    }
+
+    if (phoneCtrl.text.trim().isEmpty) {
+      _showSnack("Nomor telepon tidak boleh kosong");
+      return false;
+    }
+
+    final phone = phoneCtrl.text.trim();
+
+    if (!RegExp(r'^[0-9]+$').hasMatch(phone)) {
+      _showSnack("Nomor telepon hanya boleh angka");
+      return false;
+    }
+
+    if (!phone.startsWith('8')) {
+      _showSnack("Nomor telepon harus diawali angka 8");
+      return false;
+    }
+
+    if (phone.length < 10 || phone.length > 13) {
+      _showSnack("Nomor telepon harus 10–13 digit");
+      return false;
+    }
+
+    if (profileBytes == null && profileFile == null) {
+      _showSnack("Foto profile wajib diisi");
+      return false;
+    }
+
+    return true;
+  }
+
+  // ─────────────────────────────────────────────
+  // SUBMIT UPDATE
+  // ─────────────────────────────────────────────
   Future<void> _submitUpdate() async {
+    if (!_validate()) return;
+
     setState(() => isLoading = true);
 
     final result = await _userManager.updateUser(
       id: widget.id,
       email: emailCtrl.text.trim(),
-      password: passCtrl.text.trim(),
+      password:
+      passCtrl.text.trim().isEmpty ? '' : passCtrl.text.trim(),
       name: nameCtrl.text.trim(),
       phone: phoneCtrl.text.trim(),
       avatarFile: profileFile,
@@ -101,18 +177,10 @@ class _UserEditPageState extends State<UserEditPage> {
     setState(() => isLoading = false);
     if (!mounted) return;
 
-    // 1️⃣ TAMPILKAN NOTIFIKASI DULU
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(result.message),
-        backgroundColor: result.success ? Colors.green : Colors.red,
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
+    _showSnack(result.message, success: result.success);
 
-    // 2️⃣ JIKA SUKSES → DELAY → PINDAH HALAMAN
     if (result.success) {
-      await Future.delayed(const Duration(seconds: 2));
+      await Future.delayed(const Duration(milliseconds: 800));
       if (!mounted) return;
 
       Navigator.pushReplacement(
@@ -126,9 +194,9 @@ class _UserEditPageState extends State<UserEditPage> {
     }
   }
 
-  // =============================================================
+  // ─────────────────────────────────────────────
   // UI
-  // =============================================================
+  // ─────────────────────────────────────────────
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -151,14 +219,17 @@ class _UserEditPageState extends State<UserEditPage> {
               ),
 
               const SizedBox(height: 28),
-
               _profilePicker(),
               const SizedBox(height: 26),
 
               _inputField("Nama", nameCtrl),
               const SizedBox(height: 16),
 
-              _inputField("Email", emailCtrl),
+              _inputField(
+                "Email",
+                emailCtrl,
+                keyboardType: TextInputType.emailAddress,
+              ),
               const SizedBox(height: 16),
 
               _inputField(
@@ -168,7 +239,15 @@ class _UserEditPageState extends State<UserEditPage> {
               ),
               const SizedBox(height: 16),
 
-              _inputField("Phone", phoneCtrl),
+              _inputField(
+                "Phone (contoh: 89644447777)",
+                phoneCtrl,
+                keyboardType: TextInputType.number,
+                inputFormatters: [
+                  FilteringTextInputFormatter.digitsOnly,
+                  LengthLimitingTextInputFormatter(13),
+                ],
+              ),
               const SizedBox(height: 32),
 
               _buttonUpdate(),
@@ -181,15 +260,14 @@ class _UserEditPageState extends State<UserEditPage> {
     );
   }
 
-  // =============================================================
-  // PROFILE PICKER
-  // =============================================================
+  // ─────────────────────────────────────────────
+  // COMPONENTS
+  // ─────────────────────────────────────────────
   Widget _profilePicker() {
     return GestureDetector(
       onTap: pickProfile,
       child: Container(
-        width: double.infinity,
-        padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 18),
+        padding: const EdgeInsets.all(18),
         decoration: BoxDecoration(
           color: ColorManager.inputFill,
           borderRadius: BorderRadius.circular(16),
@@ -236,19 +314,25 @@ class _UserEditPageState extends State<UserEditPage> {
       String label,
       TextEditingController ctrl, {
         bool isPassword = false,
+        TextInputType? keyboardType,
+        List<TextInputFormatter>? inputFormatters,
       }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label,
-            style: TextStyle(
-              color: ColorManager.textDark,
-              fontWeight: FontWeight.w600,
-            )),
+        Text(
+          label,
+          style: TextStyle(
+            color: ColorManager.textDark,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
         const SizedBox(height: 6),
         TextField(
           controller: ctrl,
           obscureText: isPassword,
+          keyboardType: keyboardType,
+          inputFormatters: inputFormatters,
           decoration: InputDecoration(
             filled: true,
             fillColor: ColorManager.inputFill,
