@@ -41,8 +41,18 @@ class ColorManager {
   // ─────────────────────────────────────────────
   static const Color error = Colors.redAccent;
 
+  // ─────────────────────────────────────────────
+  //  SEMANTIC COLORS (STATUS)
+  // ─────────────────────────────────────────────
+  static const Color success = Color(0xFF22C55E); // green modern
+  static const Color danger  = Color(0xFFEF4444); // red modern
+  static const Color warning = Color(0xFFF59E0B);
+  static const Color info    = primary;
+
   // SHADOWS
   static Color shadowPrimary = const Color(0xFF89C2FF).withOpacity(0.4);
   static Color shadowLightBlue = const Color(0xFFB7DBFF).withOpacity(0.25);
   static Color shadowLightBlue2 = const Color(0xFF80C8FF).withOpacity(0.22);
+
+
 }
