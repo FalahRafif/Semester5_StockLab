@@ -20,10 +20,11 @@ class CategoryEditPage extends StatefulWidget {
 }
 
 class _CategoryEditPageState extends State<CategoryEditPage> {
+  final _formKey = GlobalKey<FormState>();
   late TextEditingController nameCtrl;
   final CategoryManager _categoryManager = CategoryManager();
 
-  bool isLoading = false;
+  bool _isLoading = false;
 
   @override
   void initState() {
@@ -31,22 +32,24 @@ class _CategoryEditPageState extends State<CategoryEditPage> {
     nameCtrl = TextEditingController(text: widget.name);
   }
 
-  Future<void> _submitUpdate() async {
-    if (nameCtrl.text.trim().isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Nama kategori wajib diisi")),
-      );
-      return;
-    }
+  @override
+  void dispose() {
+    nameCtrl.dispose();
+    super.dispose();
+  }
 
-    setState(() => isLoading = true);
+  Future<void> _submitUpdate() async {
+    // 🔒 VALIDASI FORM
+    if (!_formKey.currentState!.validate()) return;
+
+    setState(() => _isLoading = true);
 
     final result = await _categoryManager.updateCategory(
       id: widget.id,
       name: nameCtrl.text.trim(),
     );
 
-    setState(() => isLoading = false);
+    setState(() => _isLoading = false);
     if (!mounted) return;
 
     ScaffoldMessenger.of(context).showSnackBar(
@@ -58,7 +61,7 @@ class _CategoryEditPageState extends State<CategoryEditPage> {
     );
 
     if (result.success) {
-      await Future.delayed(const Duration(seconds: 2));
+      await Future.delayed(const Duration(milliseconds: 800));
       if (!mounted) return;
 
       Navigator.pushReplacement(
@@ -79,36 +82,47 @@ class _CategoryEditPageState extends State<CategoryEditPage> {
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(22),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const SizedBox(height: 18),
+          child: Form(
+            key: _formKey,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const SizedBox(height: 18),
 
-              Text(
-                "Edit Kategori",
-                style: TextStyle(
-                  fontSize: 22,
-                  fontWeight: FontWeight.w700,
-                  color: ColorManager.textDark,
+                Text(
+                  "Edit Kategori",
+                  style: TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.w700,
+                    color: ColorManager.textDark,
+                  ),
                 ),
-              ),
 
-              const SizedBox(height: 28),
+                const SizedBox(height: 28),
 
-              _inputField("Nama Kategori", nameCtrl),
-              const SizedBox(height: 32),
+                _inputField(
+                  label: "Nama Kategori",
+                  ctrl: nameCtrl,
+                ),
 
-              _buttonUpdate(),
-              const SizedBox(height: 12),
-              _buttonCancel(context),
-            ],
+                const SizedBox(height: 32),
+
+                _buttonUpdate(),
+                const SizedBox(height: 12),
+                _buttonCancel(context),
+              ],
+            ),
           ),
         ),
       ),
     );
   }
 
-  Widget _inputField(String label, TextEditingController ctrl) {
+  /// ================= INPUT =================
+  Widget _inputField({
+    required String label,
+    required TextEditingController ctrl,
+  }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -120,26 +134,35 @@ class _CategoryEditPageState extends State<CategoryEditPage> {
           ),
         ),
         const SizedBox(height: 6),
-        TextField(
+        TextFormField(
           controller: ctrl,
+          validator: (value) {
+            if (value == null || value.trim().isEmpty) {
+              return "Nama kategori tidak boleh kosong";
+            }
+            return null;
+          },
           decoration: InputDecoration(
             filled: true,
             fillColor: ColorManager.inputFill,
+            hintText: "Masukkan nama kategori",
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(14),
               borderSide: BorderSide.none,
             ),
+            errorStyle: const TextStyle(fontSize: 12),
           ),
         ),
       ],
     );
   }
 
+  /// ================= BUTTON UPDATE =================
   Widget _buttonUpdate() {
     return SizedBox(
       width: double.infinity,
       child: ElevatedButton(
-        onPressed: isLoading ? null : _submitUpdate,
+        onPressed: _isLoading ? null : _submitUpdate,
         style: ElevatedButton.styleFrom(
           backgroundColor: ColorManager.primary,
           padding: const EdgeInsets.symmetric(vertical: 16),
@@ -147,7 +170,7 @@ class _CategoryEditPageState extends State<CategoryEditPage> {
             borderRadius: BorderRadius.circular(14),
           ),
         ),
-        child: isLoading
+        child: _isLoading
             ? const SizedBox(
           width: 22,
           height: 22,
@@ -168,6 +191,7 @@ class _CategoryEditPageState extends State<CategoryEditPage> {
     );
   }
 
+  /// ================= BUTTON CANCEL =================
   Widget _buttonCancel(BuildContext context) {
     return SizedBox(
       width: double.infinity,

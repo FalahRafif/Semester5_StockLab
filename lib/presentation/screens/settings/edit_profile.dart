@@ -4,6 +4,7 @@ import 'dart:typed_data';
 
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../../shared/core/color_manager.dart';
 import '../../shared/wrappers/mobile_wrapper.dart';
@@ -44,19 +45,19 @@ class _EditProfilePageState extends State<EditProfilePage> {
   }
 
   // ─────────────────────────────────────────────
-  // LOAD USER DETAIL (FROM TOKEN USER ID)
+  // LOAD USER DETAIL
   // ─────────────────────────────────────────────
   Future<void> _loadUser() async {
     final idStr = await TokenService.getUserId();
 
     if (idStr == null) {
-      _showError("Session tidak valid, silakan login ulang");
+      _showSnack("Session tidak valid, silakan login ulang");
       return;
     }
 
     userId = int.tryParse(idStr) ?? 0;
     if (userId <= 0) {
-      _showError("ID user tidak valid");
+      _showSnack("ID user tidak valid");
       return;
     }
 
@@ -65,7 +66,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
     if (!mounted) return;
 
     if (!res.success || res.users.isEmpty) {
-      _showError(res.message);
+      _showSnack(res.message);
       return;
     }
 
@@ -93,7 +94,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
       withData: true,
     );
 
-    if (result != null) {
+    if (result != null && result.files.single.path != null) {
       setState(() {
         profileFile = File(result.files.single.path!);
         profileBytes = result.files.single.bytes;
@@ -102,15 +103,89 @@ class _EditProfilePageState extends State<EditProfilePage> {
   }
 
   // ─────────────────────────────────────────────
-  // SUBMIT UPDATE
+  // SNACK
+  // ─────────────────────────────────────────────
+  void _showSnack(String msg, {bool success = false}) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(msg),
+        backgroundColor:
+        success ? ColorManager.success : ColorManager.danger,
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
+
+  // ─────────────────────────────────────────────
+  // VALIDATION (SAMA DENGAN EDIT USER)
+  // ─────────────────────────────────────────────
+  bool _validate() {
+    if (nameCtrl.text.trim().isEmpty) {
+      _showSnack("Nama tidak boleh kosong");
+      return false;
+    }
+
+    if (emailCtrl.text.trim().isEmpty) {
+      _showSnack("Email tidak boleh kosong");
+      return false;
+    }
+
+    final emailRegex =
+    RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
+    if (!emailRegex.hasMatch(emailCtrl.text.trim())) {
+      _showSnack("Format email tidak valid");
+      return false;
+    }
+
+    // PASSWORD OPSIONAL
+    if (passCtrl.text.isNotEmpty && passCtrl.text.length < 6) {
+      _showSnack("Password minimal 6 karakter");
+      return false;
+    }
+
+    if (phoneCtrl.text.trim().isEmpty) {
+      _showSnack("Nomor telepon tidak boleh kosong");
+      return false;
+    }
+
+    final phone = phoneCtrl.text.trim();
+
+    if (!RegExp(r'^[0-9]+$').hasMatch(phone)) {
+      _showSnack("Nomor telepon hanya boleh angka");
+      return false;
+    }
+
+    if (!phone.startsWith('8')) {
+      _showSnack("Nomor telepon harus diawali angka 8");
+      return false;
+    }
+
+    if (phone.length < 10 || phone.length > 13) {
+      _showSnack("Nomor telepon harus 10–13 digit");
+      return false;
+    }
+
+    if (profileBytes == null && profileFile == null) {
+      _showSnack("Foto profile wajib diisi");
+      return false;
+    }
+
+    return true;
+  }
+
+  // ─────────────────────────────────────────────
+  // SUBMIT
   // ─────────────────────────────────────────────
   Future<void> _submit() async {
+    if (!_validate()) return;
+
     setState(() => submitting = true);
 
     final res = await _userManager.updateUser(
       id: userId.toString(),
       email: emailCtrl.text.trim(),
-      password: passCtrl.text.trim(), // opsional
+      password:
+      passCtrl.text.trim().isEmpty ? '' : passCtrl.text.trim(),
       name: nameCtrl.text.trim(),
       phone: phoneCtrl.text.trim(),
       avatarFile: profileFile,
@@ -119,16 +194,10 @@ class _EditProfilePageState extends State<EditProfilePage> {
     setState(() => submitting = false);
     if (!mounted) return;
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(res.message),
-        backgroundColor:
-        res.success ? ColorManager.primary : ColorManager.error,
-      ),
-    );
+    _showSnack(res.message, success: res.success);
 
     if (res.success) {
-      await Future.delayed(const Duration(seconds: 1));
+      await Future.delayed(const Duration(milliseconds: 800));
       if (!mounted) return;
 
       Navigator.pushReplacement(
@@ -140,13 +209,6 @@ class _EditProfilePageState extends State<EditProfilePage> {
         ),
       );
     }
-  }
-
-  void _showError(String msg) {
-    setState(() => loading = false);
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(msg), backgroundColor: ColorManager.error),
-    );
   }
 
   // ─────────────────────────────────────────────
@@ -172,7 +234,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
                 "Edit Profile",
                 style: TextStyle(
                   fontSize: 22,
-                  fontWeight: FontWeight.bold,
+                  fontWeight: FontWeight.w700,
                   color: ColorManager.textDark,
                 ),
               ),
@@ -183,11 +245,30 @@ class _EditProfilePageState extends State<EditProfilePage> {
 
               _input("Nama", nameCtrl),
               const SizedBox(height: 14),
-              _input("Email", emailCtrl),
+
+              _input(
+                "Email",
+                emailCtrl,
+                keyboardType: TextInputType.emailAddress,
+              ),
               const SizedBox(height: 14),
-              _input("Password (opsional)", passCtrl, isPassword: true),
+
+              _input(
+                "Password (opsional)",
+                passCtrl,
+                isPassword: true,
+              ),
               const SizedBox(height: 14),
-              _input("Phone", phoneCtrl),
+
+              _input(
+                "Phone (contoh: 89644447777)",
+                phoneCtrl,
+                keyboardType: TextInputType.number,
+                inputFormatters: [
+                  FilteringTextInputFormatter.digitsOnly,
+                  LengthLimitingTextInputFormatter(13),
+                ],
+              ),
               const SizedBox(height: 32),
 
               _btnUpdate(),
@@ -200,6 +281,9 @@ class _EditProfilePageState extends State<EditProfilePage> {
     );
   }
 
+  // ─────────────────────────────────────────────
+  // COMPONENTS
+  // ─────────────────────────────────────────────
   Widget _avatarPicker() {
     return InkWell(
       onTap: _pickAvatar,
@@ -233,19 +317,25 @@ class _EditProfilePageState extends State<EditProfilePage> {
       String label,
       TextEditingController ctrl, {
         bool isPassword = false,
+        TextInputType? keyboardType,
+        List<TextInputFormatter>? inputFormatters,
       }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label,
-            style: TextStyle(
-              fontWeight: FontWeight.w600,
-              color: ColorManager.textDark,
-            )),
+        Text(
+          label,
+          style: TextStyle(
+            fontWeight: FontWeight.w600,
+            color: ColorManager.textDark,
+          ),
+        ),
         const SizedBox(height: 6),
         TextField(
           controller: ctrl,
           obscureText: isPassword,
+          keyboardType: keyboardType,
+          inputFormatters: inputFormatters,
           decoration: InputDecoration(
             filled: true,
             fillColor: ColorManager.inputFill,
