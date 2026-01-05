@@ -16,7 +16,7 @@ class UserManager {
     //
     // final imageFile = File(filePath);
     //
-    final result = await DashboardManager().getDashboard();
+    final result = await UserManager().getUserDetail(22);
     print('================');
     print(result.success);
     print(result.message);
@@ -97,5 +97,18 @@ class UserManager {
     }
 
     return await _repo.deleteUser(id: id);
+  }
+
+  /// GET USER DETAIL
+  Future<UserResponse> getUserDetail(int id) async {
+    if (id <= 0) {
+      return UserResponse(
+        success: false,
+        message: 'ID user tidak valid',
+        users: [],
+      );
+    }
+
+    return await _repo.getUserDetail(id);
   }
 }
