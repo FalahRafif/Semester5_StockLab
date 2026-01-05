@@ -25,14 +25,17 @@ class DashboardData {
   final int stockTotal;
   final int lowStock;
   final int noStock;
-  final List<ChartActivityData> chartActivityData;
+
+  final List<ChartActivityData> chartActivityIn;
+  final List<ChartActivityData> chartActivityOut;
 
   DashboardData({
     required this.productTotal,
     required this.stockTotal,
     required this.lowStock,
     required this.noStock,
-    required this.chartActivityData,
+    required this.chartActivityIn,
+    required this.chartActivityOut,
   });
 
   factory DashboardData.fromJson(Map<String, dynamic> json) {
@@ -42,14 +45,18 @@ class DashboardData {
       return 0;
     }
 
-    final List list = json['chart_activity_data'] ?? [];
+    final List inList = json['chart_activity_data_in'] ?? [];
+    final List outList = json['chart_activity_data_out'] ?? [];
 
     return DashboardData(
       productTotal: parseInt(json['product_total']),
       stockTotal: parseInt(json['stock_total']),
       lowStock: parseInt(json['low_stock']),
       noStock: parseInt(json['no_stock']),
-      chartActivityData: list
+      chartActivityIn: inList
+          .map((e) => ChartActivityData.fromJson(e))
+          .toList(),
+      chartActivityOut: outList
           .map((e) => ChartActivityData.fromJson(e))
           .toList(),
     );
@@ -72,3 +79,4 @@ class ChartActivityData {
     );
   }
 }
+
