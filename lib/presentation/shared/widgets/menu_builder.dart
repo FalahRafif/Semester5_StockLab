@@ -40,6 +40,10 @@ class MenuBuilder {
       default:
         return const [
           BottomNavigationBarItem(
+            icon: Icon(Icons.home_rounded),
+            label: 'Home',
+          ),
+          BottomNavigationBarItem(
             icon: Icon(Icons.shopping_bag_rounded),
             label: 'Produk',
           ),
