@@ -3,7 +3,7 @@ import '../../shared/core/color_manager.dart';
 import '../../shared/wrappers/mobile_wrapper.dart';
 import '../auth/login.dart';
 import '../../../data/services/token_service.dart';
-import 'editProfileUser.dart';
+import 'edit_profile.dart';
 
 class SettingsPage extends StatefulWidget {
   const SettingsPage({super.key});

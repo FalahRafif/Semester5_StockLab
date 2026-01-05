@@ -24,7 +24,11 @@ class ProductData {
       category: json['category'] ?? '',
       sku: json['sku'] ?? '',
       brand: json['brand'] ?? '',
-      price: json['price'] ?? 0,
+      price: json['price'] == null
+          ? 0
+          : json['price'] is int
+          ? json['price']
+          : int.tryParse(json['price'].toString()) ?? 0,
       image: json['image'],
     );
   }

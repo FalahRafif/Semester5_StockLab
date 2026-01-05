@@ -4,6 +4,7 @@ import 'dart:typed_data';
 
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../../../shared/core/color_manager.dart';
 import '../../../shared/wrappers/mobile_wrapper.dart';
@@ -36,10 +37,11 @@ class ProductEditPage extends StatefulWidget {
 }
 
 class _ProductEditPageState extends State<ProductEditPage> {
+  final _formKey = GlobalKey<FormState>();
+
   late TextEditingController nameCtrl;
   late TextEditingController brandCtrl;
-  late TextEditingController priceCtrl; // ✅ NEW
-
+  late TextEditingController priceCtrl;
 
   final ProductManager _productManager = ProductManager();
   final CategoryManager _categoryManager = CategoryManager();
@@ -63,21 +65,27 @@ class _ProductEditPageState extends State<ProductEditPage> {
 
     nameCtrl = TextEditingController(text: widget.name);
     brandCtrl = TextEditingController(text: widget.brand);
-    priceCtrl = TextEditingController(text: widget.price.toString()); // ✅ NEW
+    priceCtrl = TextEditingController(text: widget.price.toString());
 
     if (widget.avatarBase64 != null && widget.avatarBase64!.isNotEmpty) {
       try {
-        imageBytes =
-            Uint8List.fromList(base64Decode(widget.avatarBase64!));
+        imageBytes = base64Decode(widget.avatarBase64!);
       } catch (_) {}
     }
 
     _loadCategories();
   }
 
+  @override
+  void dispose() {
+    nameCtrl.dispose();
+    brandCtrl.dispose();
+    priceCtrl.dispose();
+    super.dispose();
+  }
 
   // ------------------------------------------------------------
-  // LOAD CATEGORIES
+  // LOAD CATEGORY
   // ------------------------------------------------------------
   Future<void> _loadCategories() async {
     final result = await _categoryManager.getCategories();
@@ -85,21 +93,19 @@ class _ProductEditPageState extends State<ProductEditPage> {
     if (!mounted) return;
 
     if (result.success) {
-      final foundCategory = result.categories.firstWhere(
+      final found = result.categories.firstWhere(
             (c) => c.id == widget.categoryId,
         orElse: () => result.categories.first,
       );
 
       setState(() {
         categories = result.categories;
-        selectedCategory = foundCategory;
+        selectedCategory = found;
         isCategoryLoading = false;
       });
     } else {
       isCategoryLoading = false;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(result.message)),
-      );
+      _showSnack(result.message);
     }
   }
 
@@ -126,25 +132,10 @@ class _ProductEditPageState extends State<ProductEditPage> {
   // SUBMIT UPDATE
   // ------------------------------------------------------------
   Future<void> _submitUpdate() async {
-    if (selectedCategory == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text("Category wajib dipilih"),
-          backgroundColor: Colors.red,
-        ),
-      );
-      return;
-    }
+    if (!_formKey.currentState!.validate()) return;
 
-    final price = int.tryParse(priceCtrl.text.trim()) ?? -1;
-
-    if (price < 0) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text("Harga tidak valid"),
-          backgroundColor: Colors.red,
-        ),
-      );
+    if (imageBytes == null && imageFile == null) {
+      _showSnack("Foto product wajib diisi");
       return;
     }
 
@@ -155,20 +146,14 @@ class _ProductEditPageState extends State<ProductEditPage> {
       name: nameCtrl.text.trim(),
       brand: brandCtrl.text.trim(),
       categoryId: selectedCategory!.id,
-      price: price, // ✅ KIRIM PRICE
+      price: int.parse(priceCtrl.text.trim()),
       imageFile: imageFile,
     );
 
     setState(() => isLoading = false);
     if (!mounted) return;
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(result.message),
-        backgroundColor: result.success ? Colors.green : Colors.red,
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
+    _showSnack(result.message, success: result.success);
 
     if (result.success) {
       await Future.delayed(const Duration(milliseconds: 700));
@@ -184,6 +169,16 @@ class _ProductEditPageState extends State<ProductEditPage> {
     }
   }
 
+  void _showSnack(String msg, {bool success = false}) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(msg),
+        backgroundColor: success ? Colors.green : Colors.red,
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
+
   // ------------------------------------------------------------
   // UI
   // ------------------------------------------------------------
@@ -194,44 +189,50 @@ class _ProductEditPageState extends State<ProductEditPage> {
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(22),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const SizedBox(height: 18),
-              Text(
-                "Edit Product",
-                style: TextStyle(
-                  fontSize: 22,
-                  fontWeight: FontWeight.w700,
-                  color: ColorManager.textDark,
+          child: Form(
+            key: _formKey,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const SizedBox(height: 18),
+
+                Text(
+                  "Edit Product",
+                  style: TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.w700,
+                    color: ColorManager.textDark,
+                  ),
                 ),
-              ),
-              const SizedBox(height: 28),
+                const SizedBox(height: 28),
 
-              _imagePicker(),
-              const SizedBox(height: 26),
+                _imagePicker(),
+                const SizedBox(height: 26),
 
-              _inputField("Product Name", nameCtrl),
-              const SizedBox(height: 16),
+                _inputField(label: "Product Name", ctrl: nameCtrl),
+                const SizedBox(height: 16),
 
-              _inputField("Brand", brandCtrl),
-              const SizedBox(height: 16),
+                _inputField(label: "Brand", ctrl: brandCtrl),
+                const SizedBox(height: 16),
 
-              // ✅ PRICE
-              _inputField(
-                "Harga",
-                priceCtrl,
-                keyboardType: TextInputType.number,
-              ),
-              const SizedBox(height: 16),
+                _inputField(
+                  label: "Harga",
+                  ctrl: priceCtrl,
+                  keyboardType: TextInputType.number,
+                  inputFormatters: [
+                    FilteringTextInputFormatter.digitsOnly
+                  ],
+                ),
+                const SizedBox(height: 16),
 
-              _categoryDropdown(),
-              const SizedBox(height: 32),
+                _categoryDropdown(),
+                const SizedBox(height: 32),
 
-              _buttonUpdate(),
-              const SizedBox(height: 12),
-              _buttonCancel(context),
-            ],
+                _buttonUpdate(),
+                const SizedBox(height: 12),
+                _buttonCancel(context),
+              ],
+            ),
           ),
         ),
       ),
@@ -274,7 +275,7 @@ class _ProductEditPageState extends State<ProductEditPage> {
             const SizedBox(width: 16),
             Expanded(
               child: Text(
-                imageName ?? "Pilih Foto Product",
+                imageName ?? "Ganti Foto Product",
                 style: TextStyle(
                   color: imageBytes == null
                       ? Colors.grey.shade700
@@ -289,23 +290,33 @@ class _ProductEditPageState extends State<ProductEditPage> {
     );
   }
 
-  Widget _inputField(
-      String label,
-      TextEditingController ctrl, {
-        TextInputType keyboardType = TextInputType.text,
-      }) {
+  Widget _inputField({
+    required String label,
+    required TextEditingController ctrl,
+    TextInputType keyboardType = TextInputType.text,
+    List<TextInputFormatter>? inputFormatters,
+  }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label,
-            style: TextStyle(
-              color: ColorManager.textDark,
-              fontWeight: FontWeight.w600,
-            )),
+        Text(
+          label,
+          style: TextStyle(
+            color: ColorManager.textDark,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
         const SizedBox(height: 6),
-        TextField(
+        TextFormField(
           controller: ctrl,
           keyboardType: keyboardType,
+          inputFormatters: inputFormatters,
+          validator: (value) {
+            if (value == null || value.trim().isEmpty) {
+              return "$label wajib diisi";
+            }
+            return null;
+          },
           decoration: InputDecoration(
             filled: true,
             fillColor: ColorManager.inputFill,
@@ -313,6 +324,7 @@ class _ProductEditPageState extends State<ProductEditPage> {
               borderRadius: BorderRadius.circular(14),
               borderSide: BorderSide.none,
             ),
+            errorStyle: const TextStyle(fontSize: 12),
           ),
         ),
       ],
@@ -331,11 +343,12 @@ class _ProductEditPageState extends State<ProductEditPage> {
           ),
         ),
         const SizedBox(height: 6),
-
-        DropdownButtonFormField<CategoryData>(
-          value: categories.contains(selectedCategory)
-              ? selectedCategory
-              : null,
+        isCategoryLoading
+            ? const Center(child: CircularProgressIndicator())
+            : DropdownButtonFormField<CategoryData>(
+          value: selectedCategory,
+          validator: (v) =>
+          v == null ? "Category wajib dipilih" : null,
           items: categories.map((c) {
             return DropdownMenuItem<CategoryData>(
               value: c,
@@ -352,6 +365,7 @@ class _ProductEditPageState extends State<ProductEditPage> {
               borderRadius: BorderRadius.circular(14),
               borderSide: BorderSide.none,
             ),
+            errorStyle: const TextStyle(fontSize: 12),
           ),
           hint: const Text("Pilih Category"),
         ),
