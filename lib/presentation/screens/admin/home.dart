@@ -3,6 +3,10 @@ import 'package:fl_chart/fl_chart.dart';
 import '../../shared/core/color_manager.dart';
 import '../../shared/widgets/home_tabbar.dart';
 
+
+import '../../../application/dashboard_manager.dart';
+import '../../../data/models/dashboard_response.dart';
+
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
 
@@ -12,18 +16,64 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
   late TabController tabController;
+  final DashboardManager _dashboardManager = DashboardManager();
+
+  bool _loading = true;
+  String _error = '';
+  DashboardData? _dashboard;
+
+  double _roundUp(double value) {
+    if (value <= 5) return 5;
+    if (value <= 10) return 10;
+    if (value <= 20) return 20;
+    if (value <= 50) return 50;
+    return (value / 10).ceil() * 10;
+  }
+
+  String _formatNumber(double value) {
+    if (value % 1 == 0) {
+      return value.toInt().toString(); // 10.0 → 10
+    }
+    return value.toStringAsFixed(1); // kalau suatu saat decimal
+  }
 
   @override
   void initState() {
     tabController = TabController(length: 2, vsync: this);
+    _fetchDashboard();
     super.initState();
+  }
+
+  Future<void> _fetchDashboard() async {
+    final res = await _dashboardManager.getDashboard();
+
+    if (!mounted) return;
+
+    setState(() {
+      _loading = false;
+
+      if (res.success && res.data != null) {
+        _dashboard = res.data;
+      } else {
+        _error = res.message;
+      }
+    });
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: ColorManager.bgBottom,
-      body: SingleChildScrollView(
+      body: _loading
+          ? const Center(child: CircularProgressIndicator())
+          : _error.isNotEmpty
+          ? Center(
+        child: Text(
+          _error,
+          style: const TextStyle(color: Colors.red),
+        ),
+      )
+          : SingleChildScrollView(
         padding: const EdgeInsets.all(18),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -33,7 +83,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
             _statisticCards(),
 
             const SizedBox(height: 28),
-            _title("Aktivitas Stok 7 Hari Terakhir"),
+            _title("Banyak Aktivitas Stok Dalam 7 Hari Terakhir"),
             const SizedBox(height: 12),
             _modernStockChart(),
           ],
@@ -68,13 +118,30 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
       crossAxisSpacing: 16,
       mainAxisSpacing: 16,
       children: [
-        _statItem("Total Produk", "120", Icons.inventory_2_rounded),
-        _statItem("Total Stock", "3.421", Icons.store_mall_directory_rounded),
-        _statItem("Low Stock", "8", Icons.warning_amber_rounded),
-        _statItem("No Stock", "4", Icons.block),
+        _statItem(
+          "Total Produk",
+          _dashboard?.productTotal.toString() ?? '0',
+          Icons.inventory_2_rounded,
+        ),
+        _statItem(
+          "Total Stock",
+          _dashboard?.stockTotal.toString() ?? '0',
+          Icons.store_mall_directory_rounded,
+        ),
+        _statItem(
+          "Low Stock",
+          _dashboard?.lowStock.toString() ?? '0',
+          Icons.warning_amber_rounded,
+        ),
+        _statItem(
+          "No Stock",
+          _dashboard?.noStock.toString() ?? '0',
+          Icons.block,
+        ),
       ],
     );
   }
+
 
   Widget _statItem(String title, String value, IconData icon) {
     return Container(
@@ -129,18 +196,52 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
   // MODERN STOCK CHART (PERBAIKAN TOTAL)
   // ─────────────────────────────────────────────────────────────
   Widget _modernStockChart() {
-    final now = DateTime.now();
-    final labels = List.generate(
-      7,
-          (i) {
-        final d = now.subtract(Duration(days: 6 - i));
-        return "${d.day} ${_monthShort(d.month)}";
-      },
+    final inData = _dashboard?.chartActivityIn ?? [];
+    final outData = _dashboard?.chartActivityOut ?? [];
+
+    if (inData.isEmpty && outData.isEmpty) {
+      return const Center(child: Text("Tidak ada data grafik"));
+    }
+
+    final labels = inData.map((e) {
+      return "${e.date.day} ${_monthShort(e.date.month)}";
+    }).toList();
+
+    final inSpots = List.generate(
+      inData.length,
+          (i) => FlSpot(i.toDouble(), inData[i].total.toDouble()),
     );
+
+    final outSpots = List.generate(
+      outData.length,
+          (i) => FlSpot(i.toDouble(), outData[i].total.toDouble()),
+    );
+
+    final maxRaw = [
+      ...inData.map((e) => e.total),
+      ...outData.map((e) => e.total),
+    ].fold<int>(0, (a, b) => a > b ? a : b);
+
+    int step;
+    if (maxRaw <= 5) {
+      step = 1;
+    } else if (maxRaw <= 10) {
+      step = 2;
+    } else if (maxRaw <= 20) {
+      step = 5;
+    } else if (maxRaw <= 50) {
+      step = 10;
+    } else {
+      step = 20;
+    }
+
+    final maxY = ((maxRaw / step).ceil() * step).toDouble();
+    final interval = step.toDouble();
+
 
     return Container(
       padding: const EdgeInsets.all(18),
-      height: 280,
+      height: 300,
       decoration: BoxDecoration(
         color: ColorManager.cardBackground,
         borderRadius: BorderRadius.circular(22),
@@ -152,106 +253,140 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
           ),
         ],
       ),
-      child: LineChart(
-        LineChartData(
-          minX: 0,
-          maxX: 6,
-          minY: 0,
-          maxY: 20,
-          lineTouchData: LineTouchData(enabled: true),
-
-          // GRID — lembut & modern
-          gridData: FlGridData(
-            drawVerticalLine: true,
-            verticalInterval: 1,
-            horizontalInterval: 5,
-            getDrawingHorizontalLine: (_) => FlLine(
-              color: ColorManager.shadowLightBlue2,
-              strokeWidth: 0.7,
-            ),
-            getDrawingVerticalLine: (_) => FlLine(
-              color: ColorManager.shadowLightBlue2,
-              strokeWidth: 0.7,
-            ),
+      child: Column(
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              _legendDot(ColorManager.primary, "Stock In"),
+              const SizedBox(width: 16),
+              _legendDot(Colors.redAccent, "Stock Out"),
+            ],
           ),
+          const SizedBox(height: 12),
 
-          // AXIS — kiri & bawah saja
-          titlesData: FlTitlesData(
-            topTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
-            rightTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+          Expanded(
+            child: LineChart(
+              LineChartData(
+                minX: 0,
+                maxX: (labels.length - 1).toDouble(),
+                minY: 0,
+                maxY: maxY,
 
-            // bawah = tanggal + bulan
-            bottomTitles: AxisTitles(
-              sideTitles: SideTitles(
-                showTitles: true,
-                interval: 1,
-                reservedSize: 28,
-                getTitlesWidget: (v, _) {
-                  int idx = v.toInt();
-                  if (idx < 0 || idx > 6) return const SizedBox();
-                  return Text(
-                    labels[idx],
-                    style: const TextStyle(
-                        fontSize: 11, color: ColorManager.textDark),
-                  );
-                },
-              ),
-            ),
-
-            // kiri = jumlah stok
-            leftTitles: AxisTitles(
-              sideTitles: SideTitles(
-                showTitles: true,
-                reservedSize: 36,
-                interval: 5,
-                getTitlesWidget: (value, _) => Text(
-                  value.toInt().toString(),
-                  style: const TextStyle(
-                      fontSize: 11, color: ColorManager.textDark),
+                lineTouchData: LineTouchData(
+                  enabled: true,
+                  handleBuiltInTouches: true,
+                  touchTooltipData: LineTouchTooltipData(
+                    tooltipRoundedRadius: 12,
+                    tooltipPadding: const EdgeInsets.all(10),
+                    tooltipMargin: 8,
+                    getTooltipItems: (touchedSpots) {
+                      return touchedSpots.map((spot) {
+                        final isIn = spot.bar.color == ColorManager.primary;
+                        return LineTooltipItem(
+                          '${isIn ? "Stock In" : "Stock Out"}\n',
+                          const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
+                          children: [
+                            TextSpan(
+                              text: _formatNumber(spot.y),
+                              style: const TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        );
+                      }).toList();
+                    },
+                  ),
                 ),
+                gridData: FlGridData(
+                  horizontalInterval: interval,
+                  drawVerticalLine: false,
+                  getDrawingHorizontalLine: (_) => FlLine(
+                    color: ColorManager.shadowLightBlue2,
+                    strokeWidth: 0.7,
+                  ),
+                ),
+
+                titlesData: FlTitlesData(
+                  topTitles:
+                  AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                  rightTitles:
+                  AxisTitles(sideTitles: SideTitles(showTitles: false)),
+
+                  bottomTitles: AxisTitles(
+                    sideTitles: SideTitles(
+                      showTitles: true,
+                      interval: 1,
+                      reservedSize: 28,
+                      getTitlesWidget: (value, _) {
+                        final i = value.toInt();
+                        if (value != i.toDouble()) {
+                          return const SizedBox();
+                        }
+                        if (i < 0 || i >= labels.length) {
+                          return const SizedBox();
+                        }
+                        return Text(
+                          labels[i],
+                          style: const TextStyle(fontSize: 11),
+                        );
+                      },
+                    ),
+                  ),
+
+                  leftTitles: AxisTitles(
+                    sideTitles: SideTitles(
+                      showTitles: true,
+                      interval: interval,
+                      reservedSize: 36,
+                      getTitlesWidget: (value, _) {
+                        if (value % interval != 0) {
+                          return const SizedBox();
+                        }
+                        return Text(
+                          value.toInt().toString(),
+                          style: const TextStyle(fontSize: 11),
+                        );
+                      },
+                    ),
+                  ),
+                ),
+
+                borderData: FlBorderData(show: false),
+
+                lineBarsData: [
+                  LineChartBarData(
+                    spots: inSpots,
+                    isCurved: true,
+                    color: ColorManager.primary,
+                    barWidth: 3,
+                    dotData: FlDotData(show: false),
+                  ),
+                  LineChartBarData(
+                    spots: outSpots,
+                    isCurved: true,
+                    color: Colors.redAccent,
+                    barWidth: 3,
+                    dotData: FlDotData(show: false),
+                  ),
+                ],
               ),
             ),
           ),
-
-          borderData: FlBorderData(show: false),
-
-          // Data garis
-          lineBarsData: [
-            LineChartBarData(
-              spots: const [
-                FlSpot(0, 12),
-                FlSpot(1, 9),
-                FlSpot(2, 17),
-                FlSpot(3, 11),
-                FlSpot(4, 16),
-                FlSpot(5, 10),
-                FlSpot(6, 14),
-              ],
-              isCurved: true,
-              color: ColorManager.primary,
-              barWidth: 3,
-              dotData: FlDotData(show: false),
-            ),
-            LineChartBarData(
-              spots: const [
-                FlSpot(0, 7),
-                FlSpot(1, 5),
-                FlSpot(2, 8),
-                FlSpot(3, 6),
-                FlSpot(4, 12),
-                FlSpot(5, 4),
-                FlSpot(6, 9),
-              ],
-              isCurved: true,
-              color: ColorManager.primarySoft,
-              barWidth: 3,
-              dotData: FlDotData(show: false),
-            ),
-          ],
-        ),
+        ],
       ),
     );
   }
+
+
+
+
+
 
   String _monthShort(int m) {
     const list = [
@@ -369,4 +504,28 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
       },
     );
   }
+
+  Widget _legendDot(Color color, String text) {
+    return Row(
+      children: [
+        Container(
+          width: 10,
+          height: 10,
+          decoration: BoxDecoration(
+            color: color,
+            shape: BoxShape.circle,
+          ),
+        ),
+        const SizedBox(width: 6),
+        Text(
+          text,
+          style: const TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+      ],
+    );
+  }
+
 }
