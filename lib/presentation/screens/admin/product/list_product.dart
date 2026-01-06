@@ -9,12 +9,19 @@ import '../../../shared/wrappers/mobile_wrapper.dart';
 import '../../../../application/product_manager.dart';
 import 'add_product.dart';
 import 'edit_product.dart';
+import 'edit_stock_product.dart';
+import '../../../../data/models/product_response.dart';
 
 class ListProductPage extends StatefulWidget {
   const ListProductPage({super.key});
 
   @override
   State<ListProductPage> createState() => _ListProductPageState();
+}
+enum _ProductMenuAction {
+  edit,
+  stock,
+  delete,
 }
 
 class _ListProductPageState extends State<ListProductPage>
@@ -28,7 +35,7 @@ class _ListProductPageState extends State<ListProductPage>
   bool isFiltered = false;
 
   // MENU & FILTER
-  bool showMenu = false;
+  bool isMenuOpen = false;
   bool showFilter = false;
   late AnimationController menuController;
 
@@ -44,6 +51,13 @@ class _ListProductPageState extends State<ListProductPage>
     final start = pageIndex * pageSize;
     final end = min(start + pageSize, source.length);
     return source.sublist(start, end);
+  }
+
+  String formatPrice(int value) {
+    return "Rp ${value.toString().replaceAllMapped(
+      RegExp(r'\B(?=(\d{3})+(?!\d))'),
+          (m) => '.',
+    )}";
   }
 
   // ------------------------------------------------------------
@@ -62,14 +76,21 @@ class _ListProductPageState extends State<ListProductPage>
 
     if (result.success) {
       setState(() {
-        allProducts = result.products.map((p) => {
-          "id": p.id.toString(),
-          "name": p.name,
-          "brand": p.brand,
-          "categoryId": p.category,
-          "avatar": p.image,
-          "price": p.price.toString()
+        allProducts = result.products.map((p) {
+          final totalValue = p.price * p.quantity;
+
+          return {
+            "id": p.id.toString(),
+            "name": p.name,
+            "brand": p.brand,
+            "categoryId": p.category,
+            "avatar": p.image,
+            "price": p.price.toString(),        // price per unit
+            "quantity": p.quantity.toString(),  // ✅ NEW
+            "total": totalValue.toString(),     // ✅ NEW
+          };
         }).toList();
+
         isLoading = false;
       });
     } else {
@@ -272,7 +293,7 @@ class _ListProductPageState extends State<ListProductPage>
           Text(
             "Product Management",
             style: TextStyle(
-              fontSize: 26,
+              fontSize: 20,
               fontWeight: FontWeight.w700,
               color: ColorManager.textDark,
             ),
@@ -310,123 +331,128 @@ class _ListProductPageState extends State<ListProductPage>
   // ============================================================
   Widget _productCard(Map<String, String?> p) {
     final avatar = decodeAvatar(p["avatar"]);
+    final price = int.tryParse(p["price"] ?? "0") ?? 0;
+    final quantity = int.tryParse(p["quantity"] ?? "0") ?? 0;
+    final total = int.tryParse(p["total"] ?? "0") ?? 0;
 
     return Container(
       margin: const EdgeInsets.only(bottom: 14),
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: ColorManager.cardBackground,
+        color: Colors.white,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: ColorManager.borderSoft),
         boxShadow: [
           BoxShadow(
-            color: ColorManager.shadowLightBlue,
+            color: Colors.black.withOpacity(0.04),
             blurRadius: 12,
             offset: const Offset(0, 4),
           ),
         ],
       ),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          CircleAvatar(
-            radius: 22,
-            backgroundColor: ColorManager.primary.withOpacity(0.12),
-            backgroundImage: avatar != null ? MemoryImage(avatar) : null,
-            child: avatar == null
-                ? Text(
-              p["name"]![0].toUpperCase(),
-              style: TextStyle(
-                color: ColorManager.primary,
-                fontWeight: FontWeight.w700,
+          // ================= AVATAR =================
+          // ================= IMAGE (20%) =================
+          SizedBox(
+            width: 72, // ±20% dari card (ideal untuk mobile)
+            height: 72,
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(100),
+              child: Container(
+                color: ColorManager.primary.withOpacity(0.08),
+                child: avatar != null
+                    ? Image.memory(
+                  avatar,
+                  fit: BoxFit.cover,
+                )
+                    : Center(
+                  child: Text(
+                    p["name"]![0].toUpperCase(),
+                    style: TextStyle(
+                      fontSize: 22,
+                      fontWeight: FontWeight.w700,
+                      color: ColorManager.primary,
+                    ),
+                  ),
+                ),
               ),
-            )
-                : null,
+            ),
           ),
-          const SizedBox(width: 16),
 
+
+          const SizedBox(width: 14),
+
+          // ================= CONTENT =================
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   p["name"]!,
-                  style: TextStyle(
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
                     fontWeight: FontWeight.w600,
-                    color: ColorManager.textDark,
+                    fontSize: 15,
                   ),
                 ),
+
                 const SizedBox(height: 2),
+
                 Text(
                   p["brand"]!,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                   style: TextStyle(
                     fontSize: 13,
-                    color: ColorManager.textDark.withOpacity(0.55),
+                    color: Colors.grey.shade600,
                   ),
+                ),
+
+                const SizedBox(height: 8),
+
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 6,
+                  children: [
+                    _infoChip("Qty", quantity.toString(),
+                        color: quantity > 0
+                            ? Colors.orange
+                            : Colors.redAccent),
+                    _infoChip("Unit", formatPrice(price),
+                        color: ColorManager.primary),
+                  ],
                 ),
               ],
             ),
           ),
 
-          IconButton(
-            icon: Icon(Icons.edit_outlined,
-                color: ColorManager.primary),
-            onPressed: () async {
-              final result = await Navigator.push(
+          // ================= ACTIONS =================
+          GestureDetector(
+            onTapDown: (details) {
+              _showProductMenu(
                 context,
-                MaterialPageRoute(
-                  builder: (_) => MobileWrapper(
-                    child: ProductEditPage(
-                      id: int.parse(p["id"]!),
-                      name: p["name"]!,
-                      brand: p["brand"]!,
-                      categoryId: int.parse(p["categoryId"]!),
-                      avatarBase64: p["avatar"],
-                      price: int.parse(p["price"]!),
-                    ),
-                  ),
-                ),
+                details.globalPosition,
+                p,
               );
-              if (result == true) _loadProducts();
             },
+            child: Padding(
+              padding: const EdgeInsets.only(left: 6),
+              child: Icon(
+                Icons.more_vert_rounded,
+                color: Colors.grey.shade700,
+              ),
+            ),
           ),
 
-          IconButton(
-            icon: const Icon(Icons.delete_outline, color: Colors.redAccent),
-            onPressed: () async {
-              final confirm = await _confirmDelete(context, p["name"]!);
-              if (!confirm) return;
 
-              final productId = int.tryParse(p["id"] ?? "0") ?? 0;
-              if (productId == 0) return;
-
-              final messenger = ScaffoldMessenger.of(context);
-
-              setState(() => isLoading = true);
-
-              final result = await productManager.deleteProduct(productId);
-
-              if (!mounted) return;
-
-              setState(() => isLoading = false);
-
-              messenger.showSnackBar(
-                SnackBar(
-                  content: Text(result.message),
-                  backgroundColor: result.success ? Colors.green : Colors.red,
-                  behavior: SnackBarBehavior.floating,
-                ),
-              );
-
-              if (result.success) {
-                await Future.delayed(const Duration(seconds: 2));
-                await _loadProducts();
-              }
-            },
-          ),
         ],
       ),
     );
   }
+
 
   // ============================================================
   // TOP RIGHT +
@@ -438,8 +464,8 @@ class _ListProductPageState extends State<ListProductPage>
       child: GestureDetector(
         onTap: () {
           setState(() {
-            showMenu = !showMenu;
-            showMenu ? menuController.forward() : menuController.reverse();
+            isMenuOpen = !isMenuOpen;
+            isMenuOpen ? menuController.forward() : menuController.reverse();
           });
         },
         child: Container(
@@ -457,7 +483,7 @@ class _ListProductPageState extends State<ListProductPage>
             ],
           ),
           child: AnimatedRotation(
-            turns: showMenu ? 0.125 : 0,
+            turns: isMenuOpen ? 0.125 : 0,
             duration: const Duration(milliseconds: 220),
             child: const Icon(Icons.add_rounded,
                 color: Colors.white, size: 30),
@@ -504,7 +530,7 @@ class _ListProductPageState extends State<ListProductPage>
                   label: "Filter Product",
                   onTap: () {
                     setState(() {
-                      showMenu = false;
+                      isMenuOpen = false;
                       showFilter = true;
                       menuController.reverse();
                     });
@@ -754,4 +780,189 @@ class _ListProductPageState extends State<ListProductPage>
       ),
     );
   }
+
+  Widget _infoChip(String label, String value, {required Color color}) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.12),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Text(
+        "$label: $value",
+        style: TextStyle(
+          fontSize: 12.5,
+          fontWeight: FontWeight.w600,
+          color: color,
+        ),
+      ),
+    );
+  }
+
+  Widget _menuItemRow({
+    required IconData icon,
+    required String label,
+    Color color = Colors.black87,
+  }) {
+    return Row(
+      children: [
+        Icon(icon, size: 20, color: color),
+        const SizedBox(width: 10),
+        Text(
+          label,
+          style: TextStyle(
+            fontWeight: FontWeight.w600,
+            color: color,
+          ),
+        ),
+      ],
+    );
+  }
+
+  void _showProductMenu(
+      BuildContext context,
+      Offset position,
+      Map<String, String?> p,
+      ) async {
+    final selected = await showMenu<_ProductMenuAction>(
+      context: context,
+      position: RelativeRect.fromLTRB(
+        position.dx,
+        position.dy,
+        position.dx,
+        position.dy,
+      ),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+      ),
+      color: Colors.white,
+        elevation: 0,
+      items: [
+        PopupMenuItem(
+          value: _ProductMenuAction.edit,
+          padding: EdgeInsets.zero,
+          child: _modernMenuItem(
+            icon: Icons.edit_outlined,
+            label: "Edit Product",
+          ),
+        ),
+        PopupMenuItem(
+          value: _ProductMenuAction.stock,
+          padding: EdgeInsets.zero,
+          child: _modernMenuItem(
+            icon: Icons.inventory_2_outlined,
+            label: "Edit Stok Product",
+          ),
+        ),
+        PopupMenuItem(
+          value: _ProductMenuAction.delete,
+          padding: EdgeInsets.zero,
+          child: _modernMenuItem(
+            icon: Icons.delete_outline,
+            label: "Hapus Product",
+            color: Colors.redAccent,
+            danger: true,
+          ),
+        ),
+      ],
+    );
+
+    if (selected == null) return;
+
+    final id = int.parse(p["id"]!);
+
+    switch (selected) {
+      case _ProductMenuAction.edit:
+        final result = await Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => MobileWrapper(
+              child: ProductEditPage(
+                id: id,
+                name: p["name"]!,
+                brand: p["brand"]!,
+                categoryId: int.parse(p["categoryId"]!),
+                avatarBase64: p["avatar"],
+                price: int.parse(p["price"]!),
+              ),
+            ),
+          ),
+        );
+        if (result == true) _loadProducts();
+        break;
+
+      case _ProductMenuAction.stock:
+        final productData = ProductData(
+          id: id,
+          name: p["name"]!,
+          brand: p["brand"]!,
+          sku: '', // jika ada sku, isi sesuai data
+          category: p["categoryId"]!,
+          price: int.parse(p["price"]!),
+          quantity: int.parse(p["quantity"]!),
+          image: p["avatar"],
+        );
+
+        final result = await Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => MobileWrapper(
+              child: EditStockProductPage(product: productData),
+            ),
+          ),
+        );
+        if (result == true) _loadProducts();
+        break;
+
+
+      case _ProductMenuAction.delete:
+        final confirm =
+        await _confirmDelete(context, p["name"]!);
+        if (!confirm) return;
+
+        setState(() => isLoading = true);
+        final result =
+        await productManager.deleteProduct(id);
+        setState(() => isLoading = false);
+
+        _toast(result.message, error: !result.success);
+        if (result.success) _loadProducts();
+        break;
+    }
+  }
+
+  Widget _modernMenuItem({
+    required IconData icon,
+    required String label,
+    Color color = const Color(0xFF2C2C2C),
+    bool danger = false,
+  }) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      height: 46,
+      alignment: Alignment.centerLeft,
+      decoration: BoxDecoration(
+        color: danger
+            ? Colors.redAccent.withOpacity(0.05)
+            : Colors.transparent,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        children: [
+          Icon(icon, size: 20, color: color),
+          const SizedBox(width: 12),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              color: color,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+
 }

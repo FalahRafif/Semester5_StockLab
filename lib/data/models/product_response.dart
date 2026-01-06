@@ -5,6 +5,7 @@ class ProductData {
   final String sku;
   final String brand;
   final int price;
+  final int quantity; // ✅ NEW
   final String? image;
 
   ProductData({
@@ -14,21 +15,33 @@ class ProductData {
     required this.sku,
     required this.brand,
     required this.price,
+    required this.quantity,
     this.image,
   });
 
   factory ProductData.fromJson(Map<String, dynamic> json) {
     return ProductData(
-      id: json['id'],
+      id: json['id'] is int
+          ? json['id']
+          : int.tryParse(json['id'].toString()) ?? 0,
+
       name: json['name'] ?? '',
-      category: json['category'] ?? '',
+      category: json['category']?.toString() ?? '',
       sku: json['sku'] ?? '',
       brand: json['brand'] ?? '',
+
       price: json['price'] == null
           ? 0
           : json['price'] is int
           ? json['price']
           : int.tryParse(json['price'].toString()) ?? 0,
+
+      quantity: json['quantity'] == null
+          ? 0
+          : json['quantity'] is int
+          ? json['quantity']
+          : int.tryParse(json['quantity'].toString()) ?? 0,
+
       image: json['image'],
     );
   }
