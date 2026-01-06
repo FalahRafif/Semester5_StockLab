@@ -6,6 +6,7 @@ import '../staff/home.dart' as staff;
 import '../../shared/widgets/app_layout.dart';
 import '../../shared/core/color_manager.dart';
 import 'register.dart';
+import '../../shared/core/assets_manager.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -130,9 +131,13 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                       ),
                       child: Column(
-                        children: const [
-                          Icon(Icons.inventory_2_rounded, size: 85, color: ColorManager.textWhite),
-                          SizedBox(height: 14),
+                        children: [
+                          Image.asset(
+                            AssetsManager.appLogoWhite,
+                            width: 150,
+                            fit: BoxFit.contain,
+                          ),
+                          const SizedBox(height: 14),
                           Text(
                             "Stock Management",
                             style: TextStyle(

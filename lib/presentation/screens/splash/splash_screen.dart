@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../shared/wrappers/mobile_wrapper.dart';
 import '../../shared/core/color_manager.dart';
 import '../onboarding/onboarding_screen.dart';
+import '../../shared/core/assets_manager.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -76,10 +77,10 @@ class _SplashScreenState extends State<SplashScreen> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(
-                  Icons.inventory_2_rounded,
-                  size: 80,
-                  color: ColorManager.primary,
+                Image.asset(
+                  AssetsManager.appLogo,
+                  width: 200,
+                  fit: BoxFit.contain,
                 ),
                 const SizedBox(height: 20),
 
