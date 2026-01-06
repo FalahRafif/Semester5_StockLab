@@ -52,7 +52,7 @@ class _CategoryAddPageState extends State<CategoryAddPage> {
         context,
         MaterialPageRoute(
           builder: (_) => const MobileWrapper(
-            child: AppLayout(initialIndex: 5),
+            child: AppLayout(initialIndex: 3),
           ),
         ),
       );

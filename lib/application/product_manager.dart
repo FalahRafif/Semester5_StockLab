@@ -16,6 +16,7 @@ class ProductManager {
     required int price, // ✅ NEW
     File? imageFile,
   }) async {
+    // Validasi nama dan brand
     if (name.isEmpty || brand.isEmpty) {
       return ProductResponse(
         success: false,
@@ -24,6 +25,7 @@ class ProductManager {
       );
     }
 
+    // Validasi harga
     if (price < 0) {
       return ProductResponse(
         success: false,
@@ -32,6 +34,19 @@ class ProductManager {
       );
     }
 
+    // Validasi ukuran gambar (jika ada)
+    if (imageFile != null) {
+      final fileSize = await imageFile.length(); // dalam byte
+      if (fileSize > 1 * 1024 * 1024) { // 1 MB
+        return ProductResponse(
+          success: false,
+          message: 'Ukuran gambar maksimal 1 MB',
+          products: [],
+        );
+      }
+    }
+
+    // Lanjut ke repository
     return await _repo.createProduct(
       name: name,
       categoryId: categoryId,
@@ -41,7 +56,6 @@ class ProductManager {
     );
   }
 
-
   Future<ProductResponse> updateProduct({
     required int id,
     required String name,
@@ -49,38 +63,48 @@ class ProductManager {
     required String brand,
     required int price, // ✅ NEW
     File? imageFile,
-  }) {
+  }) async {
+    // Validasi ID
     if (id <= 0) {
-      return Future.value(
-        ProductResponse(
-          success: false,
-          message: 'ID produk tidak valid',
-          products: [],
-        ),
+      return ProductResponse(
+        success: false,
+        message: 'ID produk tidak valid',
+        products: [],
       );
     }
 
+    // Validasi nama dan brand
     if (name.isEmpty || brand.isEmpty) {
-      return Future.value(
-        ProductResponse(
-          success: false,
-          message: 'Nama dan brand wajib diisi',
-          products: [],
-        ),
+      return ProductResponse(
+        success: false,
+        message: 'Nama dan brand wajib diisi',
+        products: [],
       );
     }
 
+    // Validasi harga
     if (price < 0) {
-      return Future.value(
-        ProductResponse(
-          success: false,
-          message: 'Harga tidak valid',
-          products: [],
-        ),
+      return ProductResponse(
+        success: false,
+        message: 'Harga tidak valid',
+        products: [],
       );
     }
 
-    return _repo.updateProduct(
+    // Validasi ukuran gambar (jika ada)
+    if (imageFile != null) {
+      final fileSize = await imageFile.length(); // dalam byte
+      if (fileSize > 1 * 1024 * 1024) { // 1 MB
+        return ProductResponse(
+          success: false,
+          message: 'Ukuran gambar maksimal 1 MB',
+          products: [],
+        );
+      }
+    }
+
+    // Lanjut ke repository
+    return await _repo.updateProduct(
       id: id,
       name: name,
       categoryId: categoryId,
@@ -89,6 +113,7 @@ class ProductManager {
       imageFile: imageFile,
     );
   }
+
 
 
   /// ✅ DELETE PRODUCT

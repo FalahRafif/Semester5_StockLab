@@ -31,10 +31,7 @@ class UserManager {
     File? avatarFile,
   }) async {
     // Validasi ringan (controller-level)
-    if (email.isEmpty ||
-        password.isEmpty ||
-        name.isEmpty ||
-        phone.isEmpty) {
+    if (email.isEmpty || password.isEmpty || name.isEmpty || phone.isEmpty) {
       return UserResponse(
         success: false,
         message: 'Semua field wajib diisi',
@@ -42,6 +39,19 @@ class UserManager {
       );
     }
 
+    // Validasi ukuran avatar (jika ada)
+    if (avatarFile != null) {
+      final fileSize = await avatarFile.length(); // dalam byte
+      if (fileSize > 1 * 1024 * 1024) { // 1 MB
+        return UserResponse(
+          success: false,
+          message: 'Ukuran avatar maksimal 1 MB',
+          users: [],
+        );
+      }
+    }
+
+    // Lanjut ke repository
     return await _repo.createUser(
       email: email,
       password: password,
@@ -77,6 +87,19 @@ class UserManager {
       );
     }
 
+    // Validasi ukuran avatar (jika ada)
+    if (avatarFile != null) {
+      final fileSize = await avatarFile.length(); // dalam byte
+      if (fileSize > 1 * 1024 * 1024) { // 1 MB
+        return UserResponse(
+          success: false,
+          message: 'Ukuran avatar maksimal 1 MB',
+          users: [],
+        );
+      }
+    }
+
+    // Lanjut ke repository
     return await _repo.updateUser(
       id: parsedId,
       email: email,
@@ -86,6 +109,7 @@ class UserManager {
       avatarFile: avatarFile,
     );
   }
+
 
   Future<UserResponse> deleteUser(int id) async {
     if (id <= 0) {
