@@ -68,7 +68,7 @@ class _CategoryEditPageState extends State<CategoryEditPage> {
         context,
         MaterialPageRoute(
           builder: (_) => const MobileWrapper(
-            child: AppLayout(initialIndex: 5),
+            child: AppLayout(initialIndex: 3),
           ),
         ),
       );
