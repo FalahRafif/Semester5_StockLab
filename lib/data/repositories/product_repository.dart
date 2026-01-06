@@ -187,6 +187,7 @@ class ProductRepository {
             brand: '',
             price: 0,
             image: null,
+            quantity: 0
           ),
         ]
             : [],

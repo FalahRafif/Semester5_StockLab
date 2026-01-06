@@ -210,7 +210,7 @@ class _ListCategoryPageState extends State<ListCategoryPage>
                   Text(
                     "Category Management",
                     style: TextStyle(
-                      fontSize: 26,
+                      fontSize: 20,
                       fontWeight: FontWeight.w700,
                       color: ColorManager.textDark,
                     ),
@@ -533,6 +533,8 @@ class _ListCategoryPageState extends State<ListCategoryPage>
                         child: const Text("Tutup"),
                       ),
                     ),
+
+                    const SizedBox(height: 12),
 
                     SizedBox(
                       width: double.infinity,

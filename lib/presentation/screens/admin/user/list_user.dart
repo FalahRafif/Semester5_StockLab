@@ -625,6 +625,7 @@ class _ListUserPageState extends State<ListUserPage>
                             style: TextStyle(color: ColorManager.textDark)),
                       ),
                     ),
+                    const SizedBox(height: 12),
                     SizedBox(
                       width: double.infinity,
                       child: OutlinedButton(
