@@ -126,7 +126,7 @@ class _ListStockPageState extends State<ListStockPage>
                   Text(
                     "Stock Transactions",
                     style: TextStyle(
-                      fontSize: 26,
+                      fontSize: 20,
                       fontWeight: FontWeight.w700,
                       color: ColorManager.textDark,
                     ),
@@ -462,6 +462,8 @@ class _ListStockPageState extends State<ListStockPage>
                             style: TextStyle(color: ColorManager.textDark)),
                       ),
                     ),
+
+                    const SizedBox(height: 12),
 
                     // RESET
                     SizedBox(

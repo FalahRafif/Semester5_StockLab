@@ -9,6 +9,9 @@ import '../../../../application/transaction_manager.dart';
 import '../../../../data/models/transaction_response.dart';
 import '../../../shared/core/color_manager.dart';
 
+import 'package:permission_handler/permission_handler.dart';
+import 'package:flutter/foundation.dart';
+
 class ReportPage extends StatefulWidget {
   const ReportPage({super.key});
 
@@ -78,18 +81,39 @@ class _ReportPageState extends State<ReportPage> {
   Future<void> _exportExcel() async {
     if (_data.isEmpty) return;
 
+    // 🔐 Request permission Android
+    if (!kIsWeb && Platform.isAndroid) {
+      bool granted = false;
+
+      if (await Permission.manageExternalStorage.isGranted) {
+        granted = true;
+      } else {
+        final status = await Permission.manageExternalStorage.request();
+        granted = status.isGranted;
+      }
+
+      if (!granted) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Izin storage ditolak')),
+        );
+        return;
+      }
+    }
+
+    // Buat Excel
     final excel = Excel.createExcel();
     final sheet = excel['Report'];
 
     sheet.appendRow([
-      TextCellValue('Tanggal'),
-      TextCellValue('Produk'),
-      TextCellValue('SKU'),
-      TextCellValue('Brand'),
-      TextCellValue('Harga'),
-      TextCellValue('Qty'),
-      TextCellValue('Tipe'),
-      TextCellValue('PIC'),
+    TextCellValue('Tanggal'),
+    TextCellValue('Produk'),
+    TextCellValue('SKU'),
+    TextCellValue('Brand'),
+    TextCellValue('Harga'),
+    TextCellValue('Qty'),
+    TextCellValue('Tipe'),
+    TextCellValue('PIC'),
     ]);
 
     for (final t in _data) {
@@ -105,10 +129,17 @@ class _ReportPageState extends State<ReportPage> {
       ]);
     }
 
-    final dir = await getApplicationDocumentsDirectory();
-    final file = File(
-      '${dir.path}/transaction_report_${DateTime.now().millisecondsSinceEpoch}.xlsx',
-    );
+    // 📂 Path platform-specific
+    late Directory dir;
+    if (Platform.isAndroid) {
+      dir = Directory('/storage/emulated/0/Download'); // folder Download
+    } else {
+      dir = await getApplicationDocumentsDirectory();
+    }
+
+    final fileName =
+        'transaction_report_${DateTime.now().millisecondsSinceEpoch}.xlsx';
+    final file = File('${dir.path}/$fileName');
 
     await file.writeAsBytes(excel.encode()!);
 
@@ -116,11 +147,18 @@ class _ReportPageState extends State<ReportPage> {
 
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text('Report berhasil disimpan\n${file.path}'),
+        content: Text(
+          Platform.isAndroid
+              ? 'Report disimpan di Download\n$fileName'
+              : 'Report disimpan di\n${file.path}',
+        ),
         backgroundColor: ColorManager.primary,
       ),
     );
   }
+
+
+
 
   @override
   void dispose() {
