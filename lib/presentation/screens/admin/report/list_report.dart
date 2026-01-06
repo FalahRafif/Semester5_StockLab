@@ -213,10 +213,17 @@ class _ReportPageState extends State<ReportPage> {
               Expanded(
                 child: ElevatedButton.icon(
                   onPressed: _loading ? null : _loadReport,
-                  icon: const Icon(Icons.analytics_rounded, size: 20),
+                  icon: const Icon(
+                      Icons.analytics_rounded,
+                      size: 20,
+                      color: ColorManager.textWhite,
+                  ),
                   label: const Text(
                     "Generate Report",
-                    style: TextStyle(fontWeight: FontWeight.w600),
+                    style: TextStyle(
+                        fontWeight: FontWeight.w600,
+                        color: ColorManager.textWhite
+                    ),
                   ),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: ColorManager.primary,

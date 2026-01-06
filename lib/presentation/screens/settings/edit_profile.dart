@@ -364,7 +364,10 @@ class _EditProfilePageState extends State<EditProfilePage> {
             ? const CircularProgressIndicator(color: Colors.white)
             : const Text(
           "Simpan Perubahan",
-          style: TextStyle(fontWeight: FontWeight.bold),
+          style: TextStyle(
+              fontWeight: FontWeight.bold,
+              color: ColorManager.textWhite
+          ),
         ),
       ),
     );
