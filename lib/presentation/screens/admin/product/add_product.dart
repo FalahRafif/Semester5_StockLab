@@ -127,7 +127,7 @@ class _ProductAddPageState extends State<ProductAddPage> {
         context,
         MaterialPageRoute(
           builder: (_) =>
-          const MobileWrapper(child: AppLayout(initialIndex: 4)),
+          const MobileWrapper(child: AppLayout(initialIndex: 3)),
         ),
       );
     }

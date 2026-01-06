@@ -145,7 +145,7 @@ class _UserAddPageState extends State<UserAddPage> {
           context,
           MaterialPageRoute(
             builder: (_) => const MobileWrapper(
-              child: AppLayout(initialIndex: 1),
+              child: AppLayout(initialIndex: 4),
             ),
           ),
         );

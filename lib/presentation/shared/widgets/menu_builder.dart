@@ -12,24 +12,24 @@ class MenuBuilder {
             label: 'Dashboard',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.people_alt_rounded),
-            label: 'User',
+            icon: Icon(Icons.shopping_bag_rounded),
+            label: 'Produk',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.inventory_2_rounded),
             label: 'Stok',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.receipt_long_rounded),
-            label: 'Laporan',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.shopping_bag_rounded),
-            label: 'Produk',
-          ),
-          BottomNavigationBarItem(
             icon: Icon(Icons.category_rounded),
             label: 'Kategori',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.people_alt_rounded),
+            label: 'User',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.receipt_long_rounded),
+            label: 'Laporan',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.settings_rounded),
@@ -48,12 +48,12 @@ class MenuBuilder {
             label: 'Produk',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.category_rounded),
-            label: 'Kategori',
-          ),
-          BottomNavigationBarItem(
             icon: Icon(Icons.inventory_2_rounded),
             label: 'Stok',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.category_rounded),
+            label: 'Kategori',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.settings_rounded),

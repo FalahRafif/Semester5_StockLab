@@ -96,11 +96,11 @@ class _AppLayoutState extends State<AppLayout> {
     if (role == "admin") {
       return [
         const admin.HomePage(),                   // 0 Dashboard
-        const ListUserPage(),                     // 1 User
+        const ListProductPage(),                  // 1 Produk
         const ListStockPage(),                  // 2 Stok
-        const ReportPage(),  // 3
-        const ListProductPage(),                  // 4 Produk
-        const ListCategoryPage(),                 // 5
+        const ListCategoryPage(),                 // 3
+        const ListUserPage(),                     // 5 User
+        const ReportPage(),  // 4
         const SettingsPage(),  // 6
       ];
     }
@@ -109,8 +109,8 @@ class _AppLayoutState extends State<AppLayout> {
       return [
         const staff.HomeStaffPage(),
         const ListProductPage(),
-        const ListCategoryPage(),
         const ListStockPage(),
+        const ListCategoryPage(),
         const SettingsPage(),
       ];
     }
