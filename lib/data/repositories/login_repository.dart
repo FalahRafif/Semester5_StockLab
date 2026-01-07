@@ -34,7 +34,7 @@ class LoginRepository {
       print("Error: $e");
       return LoginResponse(
         success: false,
-        message: "Terjadi kesalahan, Username atau Password Salah",
+        message: "Terjadi kesalahan, Email atau Password Salah",
       );
     }
   }
