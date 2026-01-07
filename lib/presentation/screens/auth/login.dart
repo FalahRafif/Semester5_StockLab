@@ -19,15 +19,41 @@ class _LoginScreenState extends State<LoginScreen> {
   final emailC = TextEditingController();
   final passC = TextEditingController();
   final loginManager = LoginManager();
+  bool isPasswordVisible = false;
 
   bool isLoading = false;
 
   Future<void> handleLogin() async {
+    final email = emailC.text.trim();
+    final password = passC.text.trim();
+
+    // VALIDASI KOSONG
+    if (email.isEmpty || password.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("Email dan password wajib diisi"),
+          backgroundColor: ColorManager.error,
+        ),
+      );
+      return;
+    }
+
+    // VALIDASI FORMAT EMAIL
+    if (!isValidEmail(email)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("Format email tidak valid"),
+          backgroundColor: ColorManager.error,
+        ),
+      );
+      return;
+    }
+
     setState(() => isLoading = true);
 
     final result = await loginManager.login(
-      email: emailC.text.trim(),
-      password: passC.text.trim(),
+      email: email,
+      password: password,
     );
 
     setState(() => isLoading = false);
@@ -35,7 +61,6 @@ class _LoginScreenState extends State<LoginScreen> {
     if (!mounted) return;
 
     if (result.success) {
-      // Arahkan ke AppLayout
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(
@@ -52,6 +77,13 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
+
+  bool isValidEmail(String email) {
+    final emailRegex = RegExp(
+      r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$',
+    );
+    return emailRegex.hasMatch(email);
+  }
 
 
   @override
@@ -203,8 +235,20 @@ class _LoginScreenState extends State<LoginScreen> {
                             controller: passC,
                             label: "Password",
                             icon: Icons.lock_rounded,
-                            obscure: true,
+                            obscure: !isPasswordVisible,
+                            suffixIcon: IconButton(
+                              icon: Icon(
+                                isPasswordVisible ? Icons.visibility_off : Icons.visibility,
+                                color: ColorManager.primary,
+                              ),
+                              onPressed: () {
+                                setState(() {
+                                  isPasswordVisible = !isPasswordVisible;
+                                });
+                              },
+                            ),
                           ),
+
 
                           const SizedBox(height: 30),
 
@@ -281,12 +325,14 @@ class _StyledInput extends StatelessWidget {
   final String label;
   final IconData icon;
   final bool obscure;
+  final Widget? suffixIcon;
 
   const _StyledInput({
     required this.controller,
     required this.label,
     required this.icon,
     this.obscure = false,
+    this.suffixIcon,
   });
 
   @override
@@ -298,6 +344,7 @@ class _StyledInput extends StatelessWidget {
         labelText: label,
         labelStyle: const TextStyle(color: ColorManager.textDark),
         prefixIcon: Icon(icon, color: ColorManager.primary),
+        suffixIcon: suffixIcon,
         filled: true,
         fillColor: ColorManager.inputFill,
         border: OutlineInputBorder(
@@ -308,6 +355,7 @@ class _StyledInput extends StatelessWidget {
     );
   }
 }
+
 
 // HEADER CLIPPER
 class _HeaderClipper extends CustomClipper<Path> {
