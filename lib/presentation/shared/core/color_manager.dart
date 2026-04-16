@@ -7,6 +7,7 @@ class ColorManager {
   static const Color primary = Color(0xFF4D9DE0);
   static const Color primaryLight = Color(0xFF6FB6FF);
   static const Color primarySoft = Color(0xFF89C2FF);
+  static const Color primaryDark = Color(0xFF3B7DB3);
 
   // ─────────────────────────────────────────────
   //  BACKGROUND COLORS (gradient + ornaments)
@@ -24,6 +25,8 @@ class ColorManager {
   static const Color cardBorderSoft = Color(0xFFFFFFFF);
 
   static const Color inputFill = Color(0xFFF0F5FF);
+  static const Color border = Color(0xFFE3E8F1); // border modern clean
+  static const Color borderSoft = Color(0xFFF2F4F8); // untuk subtle cases
 
   // ─────────────────────────────────────────────
   //  TEXT COLORS

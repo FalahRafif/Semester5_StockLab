@@ -4,86 +4,132 @@ import 'app_bottom_nav.dart';
 import 'menu_builder.dart';
 import 'app_topbar.dart';
 import '../wrappers/mobile_wrapper.dart';
+import 'app_bottom_nav_more.dart';
 
-// Import halaman sesuai role
-import '../../screens/admin/home.dart';
-// import '../../screens/admin/user.dart';
-// import '../../screens/admin/settings.dart';
-//
-// import '../../screens/staff/home.dart';
-// import '../../screens/staff/tasks.dart';
-
+import '../../screens/admin/home.dart' as admin;
+import '../../screens/staff/home.dart' as staff;
 import '../../screens/auth/login.dart';
+import '../../screens/admin/user/list_user.dart';
+import '../../screens/admin/product/list_product.dart';
+import '../../screens/admin/categories/list_categories.dart';
 
 class AppLayout extends StatefulWidget {
-  const AppLayout({super.key});
+  /// ⬅️ TAMBAHAN: index awal menu
+  final int initialIndex;
+
+  const AppLayout({
+    super.key,
+    this.initialIndex = 0,
+  });
 
   @override
   State<AppLayout> createState() => _AppLayoutState();
 }
 
 class _AppLayoutState extends State<AppLayout> {
-  int index = 0;
+  late int index; // ⬅️ sekarang di-init dari widget
   String role = '';
+
   List<BottomNavigationBarItem> menus = [];
-  List<Widget> pages = [];
+  List<BottomNavigationBarItem> moreMenus = [];
+
+  List<Widget> get pages {
+    return _buildPages(role);
+  }
 
   @override
   void initState() {
     super.initState();
+    index = widget.initialIndex; // ⬅️ KUNCI UTAMA
     _initAuth();
   }
 
   Future<void> _initAuth() async {
     final token = await TokenService.getToken();
-    print("=========== wow");
-    print(token);
     if (token == null) {
       _goToLogin();
       return;
     }
 
     final r = await TokenService.getRole();
+    role = r ?? 'guest';
 
-    setState(() {
-      role = r ?? 'guest';
-      menus = MenuBuilder.build(role);
-      pages = _buildPages(role);
-    });
+    final allMenus = MenuBuilder.build(role);
+
+    // Bottom nav utama + tombol More
+    menus = [
+      ...allMenus.take(MenuBuilder.maxBottomNav),
+      const BottomNavigationBarItem(
+        icon: Icon(Icons.more_horiz_rounded),
+        label: "More",
+      ),
+    ];
+
+    // Menu sisanya masuk ke More
+    moreMenus = allMenus.skip(MenuBuilder.maxBottomNav).toList();
+
+    // Safety: pastikan index tidak out of range
+    if (index >= _buildPages(role).length) {
+      index = 0;
+    }
+
+    setState(() {});
   }
 
   void _goToLogin() {
-    if (mounted) {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(
-          builder: (_) => const MobileWrapper(child: LoginScreen()),
-        ),
-      );
-    }
+    if (!mounted) return;
+
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(
+        builder: (_) => const MobileWrapper(child: LoginScreen()),
+      ),
+    );
   }
 
   List<Widget> _buildPages(String role) {
-    switch (role.toLowerCase()) {
-      case 'admin':
-        return [
-          const HomePage(),
-          // const AdminUserPage(),
-          // const AdminSettingsPage(),
-        ];
-
-      case 'staff':
-        return [
-          const HomePage(),
-          // const StaffHomePage(),
-          // const StaffTaskPage(),
-        ];
-
-      default:
-        return [
-          const LoginScreen(),
-        ];
+    if (role == "admin") {
+      return [
+        const admin.HomePage(),                   // 0 Dashboard
+        const ListUserPage(),                     // 1 User
+        const ListProductPage(),                  // 2 Stok
+        const PlaceholderPage(title: "Laporan"),  // 3
+        const ListProductPage(),                  // 4 Produk
+        const ListCategoryPage(),                 // 5
+        const PlaceholderPage(title: "Setting"),  // 6
+      ];
     }
+
+    if (role == "staff") {
+      return [
+        const ListProductPage(),
+        const ListCategoryPage(),
+        const PlaceholderPage(title: "Stock"),
+        const PlaceholderPage(title: "Setting"),
+      ];
+    }
+
+    return [const LoginScreen()];
+  }
+
+  void _openMoreMenu() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) {
+        return FractionallySizedBox(
+          heightFactor: .85,
+          child: AppBottomNavMore(
+            menus: moreMenus,
+            startIndex: MenuBuilder.maxBottomNav,
+            onSelect: (realIndex) {
+              setState(() => index = realIndex);
+            },
+          ),
+        );
+      },
+    );
   }
 
   @override
@@ -97,22 +143,44 @@ class _AppLayoutState extends State<AppLayout> {
     return Scaffold(
       appBar: AppTopBar(
         title: "${role.toUpperCase()} Dashboard",
-        onSettingsTap: () {
-          // Navigate ke settings
-        },
+        onSettingsTap: () {},
         onLogoutTap: () async {
           await TokenService.clear();
           _goToLogin();
         },
-        onProfileTap: () {
-          // Navigate ke profile page
-        },
+        onProfileTap: () {},
       ),
       body: pages[index],
       bottomNavigationBar: AppBottomNav(
-        index: index,
+        index: index < menus.length ? index : 0,
         items: menus,
-        onTap: (i) => setState(() => index = i),
+        onTap: (i) {
+          if (i == menus.length - 1) {
+            _openMoreMenu();
+          } else {
+            setState(() => index = i);
+          }
+        },
+      ),
+    );
+  }
+}
+
+class PlaceholderPage extends StatelessWidget {
+  final String title;
+  const PlaceholderPage({super.key, required this.title});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: Center(
+        child: Text(
+          title,
+          style: const TextStyle(
+            fontSize: 24,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
       ),
     );
   }

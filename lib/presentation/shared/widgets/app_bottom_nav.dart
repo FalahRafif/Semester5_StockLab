@@ -16,42 +16,52 @@ class AppBottomNav extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
+      padding: const EdgeInsets.symmetric(vertical: 10),
       decoration: BoxDecoration(
         color: ColorManager.cardBackground,
         borderRadius: const BorderRadius.only(
-          topLeft: Radius.circular(22),
-          topRight: Radius.circular(22),
+          topLeft: Radius.circular(26),
+          topRight: Radius.circular(26),
         ),
         boxShadow: [
           BoxShadow(
-            color: ColorManager.shadowLightBlue,
-            blurRadius: 18,
-            spreadRadius: 2,
-            offset: const Offset(0, -4),
+            color: ColorManager.shadowLightBlue.withOpacity(0.15),
+            blurRadius: 25,
+            spreadRadius: 3,
+            offset: const Offset(0, -6),
           ),
         ],
       ),
       child: ClipRRect(
         borderRadius: const BorderRadius.only(
-          topLeft: Radius.circular(22),
-          topRight: Radius.circular(22),
+          topLeft: Radius.circular(26),
+          topRight: Radius.circular(26),
         ),
         child: BottomNavigationBar(
           currentIndex: index,
           onTap: onTap,
           items: items,
-          backgroundColor: ColorManager.cardBackground,
-          selectedItemColor: ColorManager.primary,
-          unselectedItemColor: ColorManager.textDark.withOpacity(0.6),
           type: BottomNavigationBarType.fixed,
+          backgroundColor: Colors.transparent,
           elevation: 0,
 
-          // modern style
-          selectedIconTheme: const IconThemeData(size: 28),
+          // Modern icon style
+          selectedIconTheme: const IconThemeData(size: 26),
           unselectedIconTheme: const IconThemeData(size: 22),
+
+          selectedItemColor: ColorManager.primary,
+          unselectedItemColor: ColorManager.textDark.withOpacity(0.55),
+
           selectedLabelStyle: const TextStyle(
-            fontWeight: FontWeight.bold,
+            fontWeight: FontWeight.w600,
+            fontSize: 12,
           ),
+          unselectedLabelStyle: const TextStyle(
+            fontSize: 11,
+          ),
+
+          // New modern indicator
+          landscapeLayout: BottomNavigationBarLandscapeLayout.centered,
         ),
       ),
     );
